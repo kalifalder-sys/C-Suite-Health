@@ -1,0 +1,4737 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSH Desktop Dashboard</title>
+    <style>
+      :root {
+        --bg: #eef1f6;
+        --card: #ffffff;
+        --line: #dfe4ec;
+        --text: #1f2937;
+        --muted: #677084;
+        --blue: #2f64e5;
+        --blue-strong: #2454d9;
+        --panel: #f7f8fb;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Inter, ui-sans-serif, system-ui, Segoe UI, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        position: relative;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        pointer-events: none;
+        z-index: -1;
+        border-radius: 999px;
+        filter: blur(80px);
+        opacity: 0.42;
+      }
+
+      body::before {
+        width: 360px;
+        height: 360px;
+        background: #d7e4ff;
+        top: -120px;
+        right: -100px;
+      }
+
+      body::after {
+        width: 340px;
+        height: 340px;
+        background: #d6f0ee;
+        bottom: -140px;
+        left: 140px;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: flex;
+      }
+
+      .sidebar {
+        width: 210px;
+        background: linear-gradient(180deg, #fbfcff 0%, #f4f7fc 100%);
+        border-right: 1px solid #d8deea;
+        transition: width 220ms ease;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 26px rgba(25, 45, 89, 0.06);
+      }
+
+      .sidebar.collapsed {
+        width: 92px;
+      }
+
+      .brand-row {
+        height: 72px;
+        padding: 0 14px;
+        border-bottom: 1px solid #dbe1eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .brand svg {
+        width: 30px;
+        height: 30px;
+        display: block;
+      }
+
+      .collapse-btn {
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+      }
+
+      .collapse-btn:hover {
+        background: #e7edf8;
+      }
+
+      .collapse-chevron {
+        width: 13px;
+        height: 13px;
+        display: block;
+        transition: transform 220ms ease;
+      }
+
+      .sidebar:not(.collapsed) .collapse-chevron {
+        transform: rotate(180deg);
+      }
+
+      .sidebar.collapsed .brand-row {
+        justify-content: space-between;
+      }
+
+      .nav {
+        padding: 10px 8px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .nav-item {
+        height: 52px;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #2a3448;
+        cursor: pointer;
+        font-size: 15px;
+        transition: background 160ms ease, transform 160ms ease, color 160ms ease;
+      }
+
+      .nav-item:hover {
+        background: #e9f0ff;
+        color: #234bb6;
+        transform: translateX(1px);
+      }
+
+      .nav-item.active {
+        background: #e1ebff;
+        color: #1e46b2;
+      }
+
+      .sidebar.collapsed .nav-item {
+        justify-content: center;
+        padding: 0;
+      }
+
+      .nav-label {
+        font-size: 15px;
+        color: #111827;
+      }
+
+      .sidebar.collapsed .nav-label {
+        display: none;
+      }
+
+      .icon {
+        width: 26px;
+        height: 26px;
+        display: inline-block;
+      }
+
+      .content {
+        flex: 1;
+        padding: 22px 32px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 26px;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: -apple-system, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 38px;
+        font-weight: 600;
+        letter-spacing: -1px;
+        line-height: 1.15;
+      }
+
+      .new-btn {
+        border: none;
+        background: linear-gradient(135deg, #3a6df0 0%, #2c58da 100%);
+        color: #fff;
+        border-radius: 14px;
+        font-size: 15px;
+        font-weight: 600;
+        height: 48px;
+        padding: 0 22px;
+        cursor: pointer;
+        box-shadow: 0 8px 22px rgba(47, 100, 229, 0.3);
+        transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+      }
+
+      .new-btn:hover {
+        filter: brightness(0.98);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(47, 100, 229, 0.36);
+      }
+
+      .ghost-btn {
+        border: 1px solid #c8d1e3;
+        background: #ffffff;
+        color: #3b455b;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        height: 44px;
+        padding: 0 18px;
+        cursor: pointer;
+      }
+
+      .ghost-btn:hover {
+        background: #f4f7fd;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 26px;
+        margin-bottom: 26px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(16, 24, 40, 0.05);
+      }
+
+      .kpi-card {
+        padding: 22px 24px;
+        transition: transform 150ms ease, box-shadow 150ms ease;
+      }
+
+      .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(16, 24, 40, 0.09);
+      }
+
+      .kpi-label {
+        font-size: 16px;
+        color: #687285;
+        margin-bottom: 8px;
+      }
+
+      .kpi-value {
+        font-size: 42px;
+        font-weight: 600;
+        letter-spacing: -0.8px;
+        font-family: -apple-system, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .filters-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .left-tabs,
+      .right-filters {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .seg,
+      .pill {
+        border: 1px solid #c8cfd9;
+        background: rgba(255, 255, 255, 0.52);
+        color: #3a4254;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-size: 15px;
+        line-height: 1;
+        height: 42px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 130ms ease;
+      }
+
+      .pill {
+        border-radius: 999px;
+        height: 34px;
+        padding: 0 14px;
+        font-size: 15px;
+      }
+
+      .seg.active,
+      .pill.active {
+        background: linear-gradient(135deg, #3b6ff2 0%, #2a57d9 100%);
+        border-color: #2a57d9;
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(47, 100, 229, 0.24);
+      }
+
+      .table-wrap {
+        padding: 20px;
+      }
+
+      .referral-shell {
+        max-width: 1200px;
+      }
+
+      .booking-shell {
+        max-width: 1140px;
+      }
+
+      .booking-title {
+        font-size: 34px;
+      }
+
+      .summary-shell {
+        max-width: 760px;
+        margin: 30px auto 0;
+      }
+
+      .confirmation-shell {
+        width: calc(100% - 48px);
+        max-width: none;
+        min-height: calc(100vh - 88px);
+        margin: 24px auto 0;
+        display: flex;
+        align-items: stretch;
+      }
+
+      .summary-card {
+        text-align: center;
+        padding: 36px 34px;
+      }
+
+      .confirmation-card {
+        width: 100%;
+        min-height: calc(100vh - 136px);
+        text-align: center;
+        padding: 56px 42px 42px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .summary-check {
+        width: 52px;
+        height: 52px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      .confirmation-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .confirmation-actions .workflow-action {
+        min-height: 64px;
+        width: 280px;
+        padding: 18px 22px;
+      }
+
+      .confirmation-kicker {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+
+      .summary-title {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .summary-line {
+        margin: 10px 0 0;
+        font-size: 16px;
+        color: #334155;
+      }
+
+      .summary-subline {
+        margin: 6px 0 0;
+        font-size: 14px;
+        color: #64748b;
+      }
+
+      .detail-shell {
+        max-width: 1500px;
+      }
+
+      .specialist-workflow-view {
+        display: grid;
+        gap: 20px;
+      }
+
+      .specialist-workflow-view.drawer-open .workflow-frame {
+        grid-template-columns: minmax(0, 1fr) 340px;
+      }
+
+      .workflow-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding-bottom: 8px;
+      }
+
+      .workflow-overline {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #64748b;
+      }
+
+      .workflow-title {
+        margin: 0;
+        font-size: 42px;
+        line-height: 1;
+        font-weight: 650;
+        letter-spacing: -0.04em;
+        color: #0f172a;
+      }
+
+      .workflow-subline {
+        margin: 10px 0 0;
+        font-size: 16px;
+        line-height: 1.45;
+        color: #64748b;
+        max-width: 760px;
+      }
+
+      .workflow-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .workflow-progress {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .workflow-step {
+        border-radius: 22px;
+        border: 1px solid #e3eaf4;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 16px 18px;
+      }
+
+      .workflow-step-label {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #94a3b8;
+      }
+
+      .workflow-step-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #64748b;
+      }
+
+      .workflow-step.done {
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .workflow-step.done .workflow-step-label,
+      .workflow-step.done .workflow-step-title {
+        color: #0f172a;
+      }
+
+      .workflow-step.active {
+        background: linear-gradient(180deg, #f9fbff 0%, #edf3ff 100%);
+        border-color: #cfdcf4;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08);
+      }
+
+      .workflow-step.active .workflow-step-label {
+        color: #2563eb;
+      }
+
+      .workflow-step.active .workflow-step-title {
+        color: #1e3a8a;
+      }
+
+      .workflow-frame {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 0;
+        gap: 20px;
+        align-items: start;
+        transition: grid-template-columns 220ms ease;
+      }
+
+      .workflow-main {
+        display: grid;
+        gap: 18px;
+      }
+
+      .workflow-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #dde6f2;
+        border-radius: 28px;
+        padding: 24px 26px;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.05);
+      }
+
+      .workflow-card.compact {
+        padding: 20px 22px;
+      }
+
+      .workflow-card.outcome-tint {
+        border-color: #d6e6ff;
+        background: rgba(239, 246, 255, 0.72);
+      }
+
+      .workflow-summary {
+        display: grid;
+        gap: 24px;
+      }
+
+      .workflow-summary-head {
+        display: grid;
+        gap: 16px;
+      }
+
+      .workflow-summary-title {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.05;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+      }
+
+      .workflow-meta-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .workflow-meta-item {
+        display: grid;
+        gap: 4px;
+      }
+
+      .workflow-meta-label {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #94a3b8;
+      }
+
+      .workflow-meta-value {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+
+      .workflow-actor-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+      }
+
+      .workflow-actor {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .workflow-actor:not(:last-child) {
+        padding-right: 24px;
+        border-right: 1px solid #e9eef6;
+      }
+
+      .workflow-panel-title {
+        margin: 0 0 10px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #64748b;
+      }
+
+      .workflow-reason {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.6;
+        font-weight: 400;
+        color: #334155;
+        letter-spacing: 0;
+      }
+
+      .workflow-meta {
+        margin: 12px 0 0;
+        font-size: 15px;
+        line-height: 1.5;
+        color: #64748b;
+      }
+
+      .workflow-attachments {
+        display: grid;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .workflow-link {
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      .workflow-link:hover {
+        text-decoration: underline;
+      }
+
+      .workflow-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 28px;
+      }
+
+      .workflow-summary-section {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .workflow-divider {
+        height: 1px;
+        background: #e9eef6;
+      }
+
+      .workflow-copy {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.55;
+        color: #334155;
+      }
+
+      .workflow-empty {
+        color: #94a3b8;
+      }
+
+      .workflow-next {
+        display: grid;
+        gap: 18px;
+      }
+
+      .workflow-next-header {
+        display: grid;
+        gap: 8px;
+      }
+
+      .workflow-kicker {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+
+      .workflow-next-title {
+        margin: 0;
+        font-size: 32px;
+        line-height: 1.08;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+      }
+
+      .workflow-next-copy {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.5;
+        color: #64748b;
+      }
+
+      .workflow-action-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .workflow-action-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .workflow-action-row.equal-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .workflow-action-row.equal-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .workflow-action {
+        width: 100%;
+        min-height: 68px;
+        border-radius: 22px;
+        border: 1px solid #dce6f4;
+        background: #ffffff;
+        padding: 16px 18px;
+        text-align: left;
+        color: #0f172a;
+        cursor: pointer;
+        transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+      }
+
+      .workflow-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 24px rgba(15, 23, 42, 0.06);
+        border-color: #cbd9ee;
+      }
+
+      .workflow-action.primary {
+        background: linear-gradient(180deg, #3b82f6 0%, #2f64e5 100%);
+        border-color: #2f64e5;
+        color: #ffffff;
+        box-shadow: 0 18px 28px rgba(47, 100, 229, 0.2);
+      }
+
+      .workflow-action.warn {
+        background: #fffaf0;
+        color: #9a5a06;
+        border-color: #f3d5a2;
+      }
+
+      .workflow-action.danger {
+        background: #fff5f5;
+        color: #b42318;
+        border-color: #f5c7c5;
+      }
+
+      .workflow-action.soft {
+        background: #f7f5ff;
+        color: #6d28d9;
+        border-color: #ddd6fe;
+      }
+
+      .workflow-action-title {
+        display: block;
+        font-size: 19px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+
+      .workflow-action-copy {
+        display: block;
+        margin-top: 5px;
+        font-size: 13px;
+        line-height: 1.4;
+        opacity: 0.82;
+      }
+
+      .workflow-note {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: #64748b;
+      }
+
+      .workflow-timeline {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #dde6f2;
+        border-radius: 28px;
+        padding: 24px 26px;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+      }
+
+      .workflow-drawer {
+        overflow: hidden;
+        opacity: 0;
+        transform: translateX(20px);
+        pointer-events: none;
+        transition: opacity 220ms ease, transform 220ms ease;
+      }
+
+      .specialist-workflow-view.drawer-open .workflow-drawer {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+
+      .workflow-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .workflow-timeline-title,
+      .workflow-drawer-title {
+        margin: 0 0 16px;
+        font-size: 20px;
+        font-weight: 650;
+        color: #0f172a;
+      }
+
+      .workflow-drawer-title {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .workflow-toggle {
+        height: 40px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid #d8e1ee;
+        background: rgba(255, 255, 255, 0.84);
+        color: #334155;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .workflow-toggle:hover {
+        background: #ffffff;
+      }
+
+      .detail-title {
+        font-size: 36px;
+        font-weight: 600;
+      }
+
+      .detail-top-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .detail-top-grid.specialist-focus {
+        gap: 14px;
+      }
+
+      .detail-mid-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .detail-mid-grid.timeline-only {
+        grid-template-columns: minmax(0, 760px);
+        justify-content: center;
+      }
+
+      .timeline-list {
+        margin: 0;
+        padding-left: 32px;
+        border-left: 2px solid #93c5fd;
+        list-style: none;
+        display: grid;
+        gap: 28px;
+        font-size: 14px;
+      }
+
+      .timeline-item {
+        position: relative;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -42px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: #2f64e5;
+      }
+
+      .timeline-event {
+        margin: 0;
+        font-size: 16px;
+        color: #1f2937;
+        font-weight: 400;
+      }
+
+      .timeline-date {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: #6b7280;
+      }
+
+      .list-cell {
+        display: grid;
+        gap: 4px;
+      }
+
+      .list-primary {
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .list-primary:hover {
+        text-decoration: underline;
+      }
+
+      .list-secondary {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .action-window {
+        font-size: 14px;
+        color: #334155;
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .outcome-action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .outcome-action-row .new-btn {
+        min-width: 184px;
+        height: 52px;
+        border-radius: 20px;
+        box-shadow: none;
+        padding: 0 22px;
+      }
+
+      .stage-actions {
+        display: grid;
+        gap: 14px;
+        margin-top: 18px;
+        max-width: 760px;
+      }
+
+      .stage-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #dde5f0;
+        border-radius: 24px;
+        padding: 22px 24px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+      }
+
+      .stage-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .stage-label {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.2;
+        font-weight: 650;
+        color: #0f172a;
+      }
+
+      .stage-eyebrow {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+      }
+
+      .stage-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stage-btn {
+        min-width: 160px;
+        height: 46px;
+        border-radius: 999px;
+        box-shadow: none;
+        padding: 0 18px;
+      }
+
+      .stage-btn.secondary {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #d5deea;
+        box-shadow: none;
+      }
+
+      .stage-btn.warning {
+        background: #fff7ed;
+        color: #b45309;
+        border: 1px solid #fed7aa;
+        box-shadow: none;
+      }
+
+      .stage-btn.danger {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        box-shadow: none;
+      }
+
+      .stage-btn.purple {
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
+        box-shadow: none;
+      }
+
+      .stage-hint {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: #64748b;
+        max-width: 460px;
+      }
+
+      .specialist-note {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .readonly-bold {
+        font-weight: 700;
+        color: #4b5563;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 15px;
+        font-weight: 650;
+      }
+
+      .status-chip.pending { background: #fef3c7; color: #92400e; }
+      .status-chip.accepted { background: #dbeafe; color: #1d4ed8; }
+      .status-chip.scheduled { background: #e8f0ff; color: #1f4fc7; }
+      .status-chip.declined,
+      .status-chip.patientdeclined { background: #fee2e2; color: #b91c1c; }
+      .status-chip.unablereach { background: #fef3c7; color: #a16207; }
+      .status-chip.rescheduled { background: #ede9fe; color: #6d28d9; }
+      .status-chip.completed { background: #c7f0da; color: #0f7a4b; }
+      .status-chip.canceled,
+      .status-chip.cancelled { background: #f8d2d2; color: #c12a2a; }
+      .status-chip.noshow { background: #ffedd5; color: #9a3412; }
+      .status-chip.needsattention { background: #fee2e2; color: #b91c1c; }
+
+      .detail-kv {
+        margin: 4px 0;
+        font-size: 16px;
+        color: #1f2937;
+      }
+
+      .detail-kv span {
+        color: #556074;
+        font-weight: 600;
+      }
+
+      .pending-gate {
+        border: 1px solid #d7deeb;
+        border-radius: 14px;
+        background: #f8fbff;
+        padding: 16px;
+        margin-top: 16px;
+      }
+
+      .pending-specialist-view {
+        max-width: 100%;
+      }
+
+      .pending-title {
+        margin: 0;
+        font-size: 48px;
+        font-weight: 700;
+        letter-spacing: -1px;
+        color: #0f172a;
+      }
+
+      .pending-subline {
+        margin: 6px 0 0;
+        font-size: 16px;
+        color: #4b5563;
+        font-weight: 600;
+      }
+
+      .pending-note {
+        margin: 8px 0 0;
+        font-size: 15px;
+        color: #94a3b8;
+      }
+
+      .pending-top-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .pending-action-row {
+        display: flex;
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .pending-action-row .new-btn {
+        height: 46px;
+        border-radius: 999px;
+        box-shadow: none;
+        padding: 0 22px;
+      }
+
+      .outcome-shell {
+        max-width: 1500px;
+      }
+
+      .outcome-expanded {
+        margin-top: 14px;
+      }
+
+      .outcome-toast {
+        margin-top: 14px;
+        border: 1px solid #bbf7d0;
+        background: #f0fdf4;
+        color: #166534;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .inbox-shell {
+        height: calc(100vh - 44px);
+        border: 1px solid #dbe1eb;
+        border-radius: 0;
+        background: #fff;
+        margin: -22px -32px;
+        display: grid;
+        grid-template-columns: 280px 1fr 1.5fr;
+      }
+
+      .inbox-sidebar,
+      .inbox-list,
+      .inbox-detail {
+        border-right: 1px solid #dbe1eb;
+      }
+
+      .inbox-detail { border-right: none; display: grid; grid-template-rows: auto 1fr auto; }
+
+      .inbox-title {
+        margin: 18px 18px 12px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .inbox-filter-btn {
+        width: calc(100% - 20px);
+        margin: 4px 10px;
+        height: 44px;
+        border: none;
+        background: transparent;
+        border-radius: 10px;
+        text-align: left;
+        padding: 0 14px;
+        font-size: 14px;
+        color: #111827;
+        cursor: pointer;
+      }
+
+      .inbox-filter-btn.active {
+        background: #dbeafe;
+        color: #2454d9;
+        font-weight: 600;
+      }
+
+      .inbox-search {
+        margin: 12px 16px;
+        width: calc(100% - 32px);
+        height: 44px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0 14px;
+        font-size: 14px;
+      }
+
+      .inbox-items {
+        overflow-y: auto;
+        height: calc(100vh - 130px);
+      }
+
+      .inbox-item {
+        padding: 14px 16px;
+        border-top: 1px solid #eef2f7;
+        cursor: pointer;
+      }
+
+      .inbox-item.active { background: #dbeafe; }
+
+      .inbox-item-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .inbox-item-subject {
+        margin-top: 4px;
+        font-size: 14px;
+        color: #1f2937;
+      }
+
+      .inbox-time {
+        font-size: 13px;
+        color: #8b96aa;
+        white-space: nowrap;
+      }
+
+      .inbox-detail-head {
+        padding: 18px 24px 16px;
+        border-bottom: 1px solid #dbe1eb;
+      }
+
+      .inbox-detail-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .inbox-detail-meta {
+        margin-top: 4px;
+        font-size: 13px;
+        color: #5f6b80;
+      }
+
+      .inbox-detail-body {
+        padding: 20px 24px;
+        font-size: 16px;
+        line-height: 1.45;
+        color: #1f2937;
+      }
+
+      .inbox-detail-body a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      .inbox-composer {
+        border-top: 1px solid #dbe1eb;
+        padding: 12px 140px 12px 12px;
+        position: relative;
+        min-height: 68px;
+      }
+
+      .inbox-reply-input {
+        width: 100%;
+        height: 46px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0 14px;
+        font-size: 14px;
+      }
+
+      .inbox-send-btn {
+        position: absolute;
+        right: 132px;
+        top: 12px;
+        height: 46px;
+        border: none;
+        border-radius: 10px;
+        background: #2f64e5;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 0 18px;
+        cursor: pointer;
+      }
+
+      .analytics-shell {
+        height: calc(100vh - 44px);
+        margin: -22px -32px;
+        background: #fff;
+        border-top: 1px solid #dbe1eb;
+      }
+
+      .analytics-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(17, 24, 39, 0.16);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 80;
+      }
+
+      .modal-overlay.hidden {
+        display: none !important;
+      }
+
+      .modal-card {
+        width: 100%;
+        max-width: 560px;
+        background: #fff;
+        border: 1px solid #e7edf6;
+        border-radius: 24px;
+        box-shadow: 0 26px 56px rgba(15, 23, 42, 0.14);
+        padding: 28px 28px 24px;
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .modal-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .modal-close {
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 30px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .modal-text {
+        margin: 0 0 14px;
+        font-size: 16px;
+        line-height: 1.36;
+        color: #475569;
+      }
+
+      .modal-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 4px;
+        font-size: 16px;
+        color: #111827;
+      }
+
+      .modal-check input {
+        width: 16px;
+        height: 16px;
+        margin-top: 3px;
+      }
+
+      .modal-input,
+      .modal-select {
+        width: 100%;
+        height: 58px;
+        border: 1px solid #d9e3f0;
+        border-radius: 18px;
+        padding: 0 18px;
+        margin-top: 16px;
+        font-size: 16px;
+        color: #111827;
+        background: #fbfdff;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .modal-btn {
+        border: none;
+        border-radius: 8px;
+        height: 40px;
+        padding: 0 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .modal-btn.secondary {
+        background: #fff;
+        color: #111827;
+      }
+
+      .modal-btn.primary {
+        background: #9aa3b2;
+        color: #fff;
+      }
+
+      .modal-btn.primary.enabled {
+        background: #1f4fc7;
+      }
+
+      .outcome-wrap {
+        border: 1px solid #dbeafe;
+        border-radius: 12px;
+        background: rgba(239, 246, 255, 0.55);
+        padding: 18px 20px;
+      }
+
+      .outcome-header {
+        margin: 0 0 12px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #2454d9;
+      }
+
+      .outcome-doc-title {
+        margin: 14px 0 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #4b5563;
+      }
+
+      .outcome-doc-link {
+        margin: 2px 0;
+        font-size: 16px;
+        color: #2454d9;
+      }
+
+      .timeline-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 18px 0;
+      }
+
+      .outgoing-ref-card {
+        background: #ffffff;
+        border: 1px solid #dce3ee;
+        border-radius: 14px;
+        padding: 18px 20px;
+      }
+
+      .section-title {
+        margin: 0 0 14px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #2a3448;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #5f6b80;
+      }
+
+      .input,
+      .select,
+      .textarea,
+      .file-input {
+        width: 100%;
+        border: 1px solid #ccd5e3;
+        background: #fff;
+        color: #1f2937;
+        border-radius: 12px;
+        padding: 11px 12px;
+        font-size: 15px;
+        font-family: inherit;
+        outline: none;
+      }
+
+      .input:focus,
+      .select:focus,
+      .textarea:focus,
+      .file-input:focus {
+        border-color: #2f64e5;
+        box-shadow: 0 0 0 3px rgba(47, 100, 229, 0.15);
+      }
+
+      .textarea {
+        resize: vertical;
+        min-height: 110px;
+      }
+
+      .search-select {
+        position: relative;
+      }
+
+      .search-select-input {
+        padding-right: 42px;
+      }
+
+      .search-select-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #334155;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .search-select-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 20;
+        background: #fff;
+        border: 1px solid #d7e0ec;
+        border-radius: 14px;
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+        padding: 8px;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      .search-select-option {
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: #1f2937;
+        border-radius: 10px;
+        padding: 10px 12px;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .search-select-option:hover,
+      .search-select-option.active {
+        background: #eef4ff;
+      }
+
+      .search-select-empty {
+        margin: 0;
+        padding: 10px 12px;
+        color: #677084;
+        font-size: 14px;
+      }
+
+      .booking-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        max-width: 920px;
+      }
+
+      .provider-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .provider-panel {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+
+      .provider-heading {
+        margin: 0 0 14px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .provider-search {
+        margin-bottom: 16px;
+      }
+
+      .provider-search-note {
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: #5f6b80;
+      }
+
+      .provider-card {
+        border: 1px solid #d2d7e1;
+        border-radius: 18px;
+        background: #f4f6fa;
+        padding: 16px 18px;
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 14px;
+        align-items: start;
+        cursor: pointer;
+        transition: border-color 130ms ease, box-shadow 130ms ease, background 130ms ease;
+      }
+
+      .provider-card:hover {
+        border-color: #bcc5d5;
+        background: #f7f8fb;
+      }
+
+      .provider-card.active {
+        border: 2px solid #2f64e5;
+        background: #edf2fb;
+        box-shadow: none;
+      }
+
+      .avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 999px;
+        background: #d4d5d9;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #242424;
+        font-weight: 600;
+      }
+
+      .rec-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #1f4fc7;
+        background: #deebff;
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+
+      .provider-title {
+        margin: 0 0 2px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #233147;
+      }
+
+      .provider-meta {
+        margin: 0;
+        font-size: 13px;
+        color: #5f6b80;
+        line-height: 1.35;
+      }
+
+      .provider-main {
+        text-align: left;
+      }
+
+      .provider-right {
+        align-self: start;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #2454d9;
+        font-size: 14px;
+      }
+
+      .provider-selected {
+        font-size: 14px;
+        color: #2454d9;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .provider-empty {
+        margin: 0;
+        border: 1px dashed #cdd7e6;
+        border-radius: 16px;
+        background: #f8fafc;
+        padding: 18px;
+        color: #5f6b80;
+        font-size: 14px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 16px 22px;
+        border-bottom: 1px solid #e6e8ed;
+        font-size: 15px;
+      }
+
+      th {
+        background: transparent;
+        color: #111827;
+        font-weight: 700;
+      }
+
+      tbody tr:hover {
+        background: #f7f9ff;
+      }
+
+      tr.unread-row td,
+      tr.unread-row td a {
+        font-weight: 700;
+      }
+
+      tr.unread-row .status {
+        font-weight: 600;
+      }
+
+      #dashboardView h1 {
+        font-size: 34px;
+      }
+
+      #dashboardView .kpi-card {
+        padding: 18px 22px;
+      }
+
+      #dashboardView .kpi-label {
+        font-size: 15px;
+      }
+
+      #dashboardView .kpi-value {
+        font-size: 34px;
+      }
+
+      #dashboardView .seg,
+      #dashboardView .pill {
+        font-size: 14px;
+      }
+
+      #dashboardView th,
+      #dashboardView td {
+        font-size: 14px;
+        padding: 14px 20px;
+      }
+
+      #dashboardView th {
+        font-size: 15px;
+      }
+
+      td.ref a {
+        color: #2f64e5;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 120ms ease;
+      }
+
+      td.ref a:hover {
+        color: #204fcc;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .scheduled { background: #e8f0ff; color: #1f4fc7; }
+      .accepted { background: #dbeafe; color: #1d4ed8; }
+      .pending { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+      .declined,
+      .patientdeclined { background: #fee2e2; color: #b91c1c; }
+      .unablereach { background: #fef3c7; color: #a16207; border: 1px solid #fcd34d; }
+      .rescheduled { background: #ede9fe; color: #6d28d9; }
+      .completed { background: #c7f0da; color: #0f7a4b; }
+      .canceled,
+      .cancelled { background: #f8d2d2; color: #c12a2a; }
+      .noshow { background: #ffedd5; color: #9a3412; border: 1px solid #fdba74; }
+      .needsattention { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+      th.status-head,
+      td.status-cell {
+        text-align: center;
+      }
+
+      .empty {
+        text-align: center;
+        color: #6b7280;
+        padding: 28px;
+        font-size: 16px;
+      }
+
+      @media (max-width: 1280px) {
+        .content { padding: 24px; }
+        h1 { font-size: 32px; }
+        .new-btn { font-size: 15px; height: 42px; }
+        .kpi-label { font-size: 15px; }
+        .kpi-value { font-size: 36px; }
+        .seg, .pill { font-size: 14px; height: 40px; }
+        .pill { height: 34px; }
+        th, td { font-size: 14px; }
+        .status { font-size: 13px; }
+        .nav-item { font-size: 16px; }
+        .nav-label { font-size: 15px; }
+        .form-grid { grid-template-columns: 1fr; }
+        .booking-grid { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr; }
+        .workflow-progress,
+        .workflow-meta-row,
+        .workflow-actor-row,
+        .workflow-summary-grid,
+        .workflow-action-row { grid-template-columns: 1fr; }
+        .workflow-actor:not(:last-child) {
+          padding-right: 0;
+          border-right: none;
+          padding-bottom: 18px;
+          border-bottom: 1px solid #e9eef6;
+        }
+        .workflow-hero {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .workflow-title { font-size: 34px; }
+        .specialist-workflow-view.drawer-open .workflow-frame,
+        .workflow-frame { grid-template-columns: 1fr; }
+        .workflow-drawer {
+          opacity: 1;
+          transform: none;
+          pointer-events: auto;
+        }
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside id="sidebar" class="sidebar">
+        <div class="brand-row">
+          <button id="brandHomeBtn" class="brand" aria-label="C-Suite Health logo" type="button" style="border:none; background:transparent; padding:0; cursor:pointer;">
+            <svg viewBox="0 0 128 128" aria-hidden="true">
+              <defs>
+                <linearGradient id="cshBlueDesktop" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#3B82F6"></stop>
+                  <stop offset="100%" stop-color="#1D4ED8"></stop>
+                </linearGradient>
+              </defs>
+              <path
+                d="M64 10c20.6 0 39 9.4 51.1 24.2 3.4 4.1 2.8 10.2-1.3 13.6-4.1 3.3-10.2 2.8-13.5-1.3A45.5 45.5 0 0 0 64 29.4c-19.1 0-34.6 15.5-34.6 34.6 0 19 15.5 34.6 34.6 34.6 14.5 0 27-8.9 32.3-21.6 2-4.9 7.7-7.2 12.6-5.2 4.9 2 7.3 7.7 5.2 12.6C106.2 103 86.7 118 64 118c-29.8 0-54-24.2-54-54S34.2 10 64 10z"
+                fill="url(#cshBlueDesktop)"
+              ></path>
+              <circle cx="64" cy="64" r="18" fill="url(#cshBlueDesktop)"></circle>
+            </svg>
+          </button>
+          <button id="collapseBtn" class="collapse-btn" aria-label="Collapse sidebar" type="button">
+            <svg class="collapse-chevron" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 2.2 9 6 3 9.8Z" fill="currentColor"></path>
+            </svg>
+          </button>
+        </div>
+        <nav class="nav">
+          <button id="navDashboardBtn" class="nav-item active" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4.5 10.2 12 4l7.5 6.2V18a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2z"></path>
+              <path d="M10 20v-5.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"></path>
+            </svg>
+            <span class="nav-label">Dashboard</span>
+          </button>
+          <button id="navInboxBtn" class="nav-item" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            <span class="nav-label">Inbox</span>
+          </button>
+          <button id="navAnalyticsBtn" class="nav-item" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V12"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M22 20v-5"/></svg>
+            <span class="nav-label">Analytics</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section id="dashboardView">
+          <div class="top-row">
+            <h1>Welcome back, Kalif</h1>
+            <button id="newReferralBtn" class="new-btn" type="button">＋ New Referral</button>
+          </div>
+
+          <section id="kpis" class="kpi-grid"></section>
+
+          <div class="filters-row">
+            <div class="left-tabs">
+              <button class="seg active" data-tab="Outgoing" type="button">Outgoing</button>
+              <button class="seg" data-tab="Incoming" type="button">Incoming</button>
+            </div>
+            <div class="right-filters">
+              <button class="pill active" data-filter="All" type="button">All</button>
+              <button class="pill" data-filter="Pending" type="button">Pending</button>
+              <button class="pill" data-filter="Scheduled" type="button">Scheduled</button>
+              <button class="pill" data-filter="Completed" type="button">Completed</button>
+              <button class="pill" data-filter="Cancelled" type="button">Cancelled</button>
+              <button class="pill" data-filter="No Show" type="button">No Show</button>
+              <button class="pill" data-filter="Needs Attention" type="button">Needs Attention</button>
+            </div>
+          </div>
+
+          <section class="card table-wrap">
+            <table>
+              <colgroup>
+                <col style="width: 18%" />
+                <col style="width: 19%" />
+                <col style="width: 22%" />
+                <col style="width: 15%" />
+                <col style="width: 13%" />
+                <col style="width: 13%" />
+              </colgroup>
+              <thead>
+                <tr>
+                <th>Referral</th>
+                <th>Patient</th>
+                <th id="fromToHeader">To</th>
+                <th class="status-head">Status</th>
+                <th>Date</th>
+                <th>Updated</th>
+              </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </section>
+        </section>
+
+        <section id="inboxView" class="hidden inbox-shell">
+          <aside class="inbox-sidebar">
+            <h2 class="inbox-title">Inbox</h2>
+            <button class="inbox-filter-btn active" data-inbox-filter="All" type="button">All</button>
+            <button class="inbox-filter-btn" data-inbox-filter="Unread" type="button">Unread</button>
+            <button class="inbox-filter-btn" data-inbox-filter="Flagged" type="button">Flagged</button>
+            <button class="inbox-filter-btn" data-inbox-filter="Archived" type="button">Archived</button>
+          </aside>
+
+          <section class="inbox-list">
+            <input id="inboxSearchInput" class="inbox-search" type="text" placeholder="Search messages..." />
+            <div id="inboxItems" class="inbox-items"></div>
+          </section>
+
+          <section class="inbox-detail">
+            <div id="inboxDetailHead" class="inbox-detail-head"></div>
+            <div id="inboxDetailBody" class="inbox-detail-body"></div>
+            <div class="inbox-composer">
+              <input id="inboxReplyInput" class="inbox-reply-input" type="text" placeholder="Write a reply..." />
+              <button id="inboxSendBtn" class="inbox-send-btn" type="button">Send</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="analyticsView" class="hidden analytics-shell">
+          <iframe class="analytics-frame" src="./FQHC analytics dashboard.html" title="Analytics Dashboard"></iframe>
+        </section>
+
+        <section id="referralView" class="hidden referral-shell">
+          <div class="top-row">
+            <h1>Create Referral</h1>
+            <div style="display:flex; gap:10px;">
+              <button id="cancelReferralBtn" class="ghost-btn" type="button">Cancel</button>
+              <button id="nextReferralBtn" class="new-btn" type="button">Next</button>
+            </div>
+          </div>
+
+          <section class="card table-wrap" style="margin-bottom: 20px;">
+            <h2 class="section-title">Patient Info</h2>
+            <div class="form-grid">
+              <div class="field">
+                <label for="firstName">First name</label>
+                <input id="firstName" class="input" type="text" />
+              </div>
+              <div class="field">
+                <label for="lastName">Last name</label>
+                <input id="lastName" class="input" type="text" />
+              </div>
+              <div class="field">
+                <label for="dob">Date of birth</label>
+                <input id="dob" class="input" type="date" />
+              </div>
+              <div class="field">
+                <label for="language">Language</label>
+                <select id="language" class="select">
+                  <option value="">Select language</option>
+                  <option>English</option>
+                  <option>Spanish</option>
+                  <option>Amharic</option>
+                  <option>French</option>
+                  <option>Haitian Creole</option>
+                  <option>Arabic</option>
+                  <option>Vietnamese</option>
+                  <option>Chinese (Mandarin)</option>
+                  <option>Ethiopian (Tigrinya)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="phone">Phone</label>
+                <input id="phone" class="input" type="tel" />
+              </div>
+              <div class="field">
+                <label for="insurance">Insurance</label>
+                <select id="insurance" class="select">
+                  <option value="">Select insurance</option>
+                  <option>Medicaid (DC Healthy Families)</option>
+                  <option>Medicare</option>
+                  <option>AmeriHealth Caritas DC</option>
+                  <option>CareFirst BlueCross BlueShield</option>
+                  <option>Aetna Better Health</option>
+                  <option>UnitedHealthcare Community Plan</option>
+                  <option>MedStar Family Choice DC</option>
+                  <option>Cigna</option>
+                  <option>Kaiser Permanente</option>
+                  <option>Other / Uninsured</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card table-wrap" style="margin-bottom: 20px;">
+            <h2 class="section-title">Routing</h2>
+            <div class="form-grid">
+              <div class="field">
+                <label for="specialty">Specialty</label>
+                <div id="specialtySelect" class="search-select">
+                  <input id="specialty" class="input search-select-input" type="text" placeholder="Select or search specialty" autocomplete="off" />
+                  <button id="specialtyToggleBtn" class="search-select-toggle" type="button" aria-label="Open specialty options">
+                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="m5 7 5 6 5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <div id="specialtyMenu" class="search-select-menu hidden"></div>
+                </div>
+              </div>
+              <div id="subspecialtyField" class="field hidden">
+                <label for="subspecialty">Subspecialty <span style="color:#677084; font-weight:400;">(optional)</span></label>
+                <div id="subspecialtySelect" class="search-select">
+                  <input id="subspecialty" class="input search-select-input" type="text" placeholder="Select or search subspecialty" autocomplete="off" />
+                  <button id="subspecialtyToggleBtn" class="search-select-toggle" type="button" aria-label="Open subspecialty options">
+                    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="m5 7 5 6 5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <div id="subspecialtyMenu" class="search-select-menu hidden"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="clinic">Clinic</label>
+                <select id="clinic" class="select">
+                  <option value="">Select clinic</option>
+                  <option>Howard University Hospital</option>
+                  <option>Faculty Practice Plan</option>
+                  <option>Adventist Healthcare</option>
+                  <option>MedStar Washington Hospital Center</option>
+                  <option>MedStar Georgetown University Hospital</option>
+                  <option>George Washington University Hospital</option>
+                  <option>Sibley Memorial Hospital</option>
+                  <option>Children's National Hospital</option>
+                  <option>Unity Health Care Specialty Clinic</option>
+                  <option>Georgetown Lombardi Comprehensive Cancer Center</option>
+                  <option>Washington Cancer Institute</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="visitType">Visit Type</label>
+                <select id="visitType" class="select">
+                  <option value="">Select visit type</option>
+                  <option>Consultation</option>
+                  <option>Follow-up</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="urgency">Urgency</label>
+                <select id="urgency" class="select">
+                  <option value="">Select urgency</option>
+                  <option>Routine</option>
+                  <option>Priority</option>
+                  <option>Urgent</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card table-wrap">
+            <h2 class="section-title">Referral Reason</h2>
+            <div class="field" style="margin-bottom: 16px;">
+              <label for="clinicalNotes">Referral reason</label>
+              <textarea id="clinicalNotes" class="textarea" placeholder="Describe why the patient is being referred."></textarea>
+            </div>
+            <div class="field">
+              <label for="attachment">Attachment (optional)</label>
+              <input id="attachment" class="file-input" type="file" multiple />
+            </div>
+          </section>
+        </section>
+
+        <section id="bookingView" class="hidden booking-shell">
+          <div class="top-row">
+            <h1 class="booking-title">Select Specialist</h1>
+            <div style="display:flex; gap:10px;">
+              <button id="backToReferralBtn" class="ghost-btn" type="button">Back</button>
+              <button id="bookConfirmBtn" class="new-btn" type="button" disabled style="opacity:.55; cursor:not-allowed;">Send Referral</button>
+            </div>
+          </div>
+
+          <div class="booking-grid">
+            <section class="provider-panel">
+              <h2 class="provider-heading">Recommended Specialists</h2>
+              <div class="provider-search">
+                <label for="specialistSearch">Search specialists (optional)</label>
+                <input id="specialistSearch" class="input" type="text" placeholder="Type a name, clinic, specialty, language, or insurance" />
+                <p class="provider-search-note">Use search if the primary care doctor wants to manually pick a specific specialist.</p>
+              </div>
+              <div id="providerList" class="provider-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="summaryView" class="hidden summary-shell">
+          <section class="card summary-card">
+            <div class="summary-check">&#10003;</div>
+            <h2 class="summary-title">Referral Sent</h2>
+            <p id="summaryProviderLine" class="summary-line"></p>
+            <p id="summaryPatientLine" class="summary-subline"></p>
+            <p id="summaryInsuranceLine" class="summary-subline"></p>
+            <div style="margin-top:24px;">
+              <button id="backToDashboardBtn" class="new-btn" type="button">Back to Dashboard</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="outcomeSentView" class="hidden confirmation-shell">
+          <section class="card confirmation-card">
+            <div class="summary-check">&#10003;</div>
+            <h1 class="confirmation-kicker">Outcome Sent</h1>
+            <div class="confirmation-actions">
+              <button id="outcomeSentBackReferralBtn" class="workflow-action primary" type="button">
+                <span class="workflow-action-title">Back to Referral</span>
+                <span class="workflow-action-copy">Review the logged outcome on this referral.</span>
+              </button>
+              <button id="outcomeSentBackDashboardBtn" class="workflow-action" type="button">
+                <span class="workflow-action-title">Back to Dashboard</span>
+                <span class="workflow-action-copy">Return to your main referral list.</span>
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <section id="detailView" class="hidden detail-shell">
+          <div id="standardDetailContent">
+            <div class="top-row">
+              <h1 id="detailHeading" class="detail-title"></h1>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span id="detailStatusChip" class="status-chip"></span>
+                <button id="detailBackBtn" class="ghost-btn" type="button">Back to Dashboard</button>
+              </div>
+            </div>
+
+            <section class="card table-wrap">
+              <div class="detail-top-grid">
+                <div id="detailPatientCard"></div>
+                <div id="detailSummaryCard"></div>
+                <div id="detailProviderCard"></div>
+              </div>
+            </section>
+
+            <section id="detailMiddleWrap" class="detail-mid-grid" style="margin-top:16px;">
+              <div id="detailOutcomeWrap" class="card table-wrap outcome-wrap">
+                <div id="detailOutcomeCard"></div>
+              </div>
+              <div class="card table-wrap">
+                <h2 class="timeline-title">Referral Timeline</h2>
+                <ul id="detailTimeline" class="timeline-list"></ul>
+              </div>
+            </section>
+
+            <div id="specialistActions" class="action-row hidden"></div>
+            <p id="referringReadOnlyNote" class="specialist-note readonly-bold hidden">
+              Referring provider view: status updates are read-only here and reflect specialist actions.
+            </p>
+          </div>
+
+          <section id="specialistWorkflowView" class="hidden specialist-workflow-view"></section>
+
+          <section id="pendingSpecialistView" class="pending-specialist-view hidden">
+            <div class="top-row" style="margin-bottom:8px;">
+              <div>
+                <h1 class="pending-title">Referral Details</h1>
+                <p id="pendingCodeLine" class="pending-subline"></p>
+              </div>
+              <button id="pendingBackBtn" class="ghost-btn" type="button">Back to Dashboard</button>
+            </div>
+
+            <section class="pending-top-grid">
+              <div id="pendingPatientCard" class="card table-wrap"></div>
+              <div id="pendingSummaryCard" class="card table-wrap"></div>
+              <div id="pendingProviderCard" class="card table-wrap"></div>
+            </section>
+
+            <div class="pending-action-row">
+              <button id="pendingConfirmBtn" class="new-btn" type="button">Accept</button>
+              <button id="pendingCancelBtn" class="new-btn" type="button" style="background:#dc2626;">Decline</button>
+            </div>
+          </section>
+
+          <div id="scheduleModal" class="modal-overlay hidden">
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="scheduleTitle">
+              <div class="modal-head">
+                <h2 id="scheduleTitle" class="modal-title">Schedule Referral</h2>
+                <button id="scheduleCloseBtn" class="modal-close" type="button">&times;</button>
+              </div>
+              <p class="modal-text">Select the appointment date for this referral.</p>
+              <input id="scheduleDateInput" class="modal-input" type="date" />
+              <div class="modal-actions">
+                <button id="scheduleDismissBtn" class="modal-btn secondary" type="button">Cancel</button>
+                <button id="scheduleSaveBtn" class="modal-btn primary" type="button" disabled>Save Schedule</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="cancelModal" class="modal-overlay hidden">
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cancelTitle">
+              <div class="modal-head">
+                <h2 id="cancelTitle" class="modal-title">Cancel Referral</h2>
+                <button id="cancelCloseBtn" class="modal-close" type="button">&times;</button>
+              </div>
+              <p class="modal-text">Please select the reason for cancellation. Unity will be notified immediately.</p>
+              <select id="cancelReasonSelect" class="modal-select">
+                <option value="">Select a reason</option>
+                <option value="Patient Declined">Patient Declined</option>
+                <option value="Specialist Declined">Specialist Declined</option>
+                <option value="Other">Other</option>
+              </select>
+              <textarea id="cancelOtherReasonInput" class="modal-input hidden" placeholder="Add an optional note"></textarea>
+              <div class="modal-actions">
+                <button id="cancelDismissBtn" class="modal-btn secondary" type="button">Cancel</button>
+                <button id="cancelSubmitBtn" class="modal-btn primary" type="button" disabled>Submit Cancellation</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="outcomeView" class="hidden outcome-shell">
+          <div class="top-row">
+            <div>
+              <h1 class="detail-title">Log Visit Outcome</h1>
+              <p id="outcomeCodeLine" class="pending-subline"></p>
+            </div>
+            <button id="outcomeBackBtn" class="ghost-btn" type="button">Back to Referral</button>
+          </div>
+
+          <section class="card table-wrap">
+            <div class="detail-top-grid">
+              <div id="outcomePatientCard"></div>
+              <div id="outcomeSummaryCard"></div>
+              <div id="outcomeProviderCard"></div>
+            </div>
+          </section>
+
+          <div class="outcome-action-row">
+            <button id="outcomeOpenCompletedBtn" class="new-btn" type="button">Completed</button>
+            <button id="outcomeOpenNoShowBtn" class="new-btn" type="button" style="background:#f97316;">No Show</button>
+            <button id="outcomeOpenRescheduleBtn" class="new-btn" type="button" style="background:#7c3aed;">Rescheduled</button>
+            <button id="outcomeOpenCancelBtn" class="new-btn" type="button" style="background:#dc2626;">Cancel Referral</button>
+          </div>
+
+          <div id="outcomeExpanded" class="outcome-expanded"></div>
+          <div id="outcomeToast" class="outcome-toast hidden"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const referrals = [
+        {
+          code: 'CSH-25-0483',
+          patient: 'Anna Baker',
+          dob: '1987-04-12',
+          insurance: 'Cigna PPO',
+          referringClinic: "Mary's Center",
+          specialistClinic: 'HUH Oncology',
+          status: 'Scheduled',
+          date: 'May 28, 2025',
+          updated: '2 hours ago',
+          incoming: true,
+          outgoing: false,
+          timeline: ['Referral received from Mary\'s Center', 'Specialist confirmed appointment']
+        },
+        {
+          code: 'CSH-25-0484',
+          patient: 'John Carter',
+          dob: '1983-10-09',
+          insurance: 'CareFirst BlueCross BlueShield',
+          referringClinic: 'Unity Health',
+          specialistClinic: 'HUH Cardiology',
+          status: 'Completed',
+          date: 'May 27, 2025',
+          updated: 'Yesterday',
+          incoming: true,
+          outgoing: false,
+          timeline: ['Referral received from Unity Health', 'Appointment confirmed', 'Outcome logged: Completed']
+        },
+        {
+          code: 'CSH-25-0485',
+          patient: 'Sarah Nguyen',
+          dob: '1990-08-23',
+          insurance: 'Medicaid (DC Healthy Families)',
+          referringClinic: 'Howard Family Med',
+          specialistClinic: 'HUH Oncology',
+          status: 'Canceled',
+          date: 'May 26, 2025',
+          updated: 'Today 10:12 AM',
+          incoming: true,
+          outgoing: false,
+          timeline: ['Referral received from Howard Family Med', 'Referral canceled by specialist']
+        },
+        {
+          code: 'CSH-25-0486',
+          patient: 'Lisa Tran',
+          dob: '1985-06-18',
+          insurance: 'Aetna Better Health',
+          referringClinic: 'C-Suite Health',
+          specialistClinic: 'HUH Oncology',
+          status: 'Completed',
+          date: 'May 28, 2025',
+          updated: '3 hours ago',
+          incoming: false,
+          outgoing: true,
+          timeline: ['Referral sent to HUH Oncology', 'Appointment confirmed', 'Outcome logged: Completed']
+        },
+        {
+          code: 'CSH-25-0487',
+          patient: 'Mike Brown',
+          dob: '1978-11-02',
+          insurance: 'Medicare',
+          referringClinic: 'C-Suite Health',
+          specialistClinic: 'HUH Surgery',
+          status: 'Canceled',
+          date: 'May 27, 2025',
+          updated: 'Yesterday',
+          incoming: false,
+          outgoing: true,
+          timeline: ['Referral sent to HUH Surgery', 'Referral canceled by specialist']
+        },
+        {
+          code: 'CSH-25-0488',
+          patient: 'Tanya Fields',
+          dob: '1992-03-14',
+          insurance: 'AmeriHealth Caritas DC',
+          referringClinic: 'C-Suite Health',
+          specialistClinic: 'HUH Family Med',
+          status: 'No-show',
+          date: 'May 26, 2025',
+          updated: '2 days ago',
+          incoming: false,
+          outgoing: true,
+          timeline: ['Referral sent to HUH Family Med', 'Patient marked No-show']
+        },
+        {
+          code: 'CSH-25-0489',
+          patient: 'Robert Lane',
+          dob: '1988-12-01',
+          phone: '(202) 555-9821',
+          email: 'robertlane@example.com',
+          insurance: 'Medicaid',
+          referringClinic: 'C-Suite Health',
+          specialistClinic: 'HUH Cardiology',
+          status: 'Pending',
+          date: 'May 29, 2025',
+          updated: '30 mins ago',
+          incoming: true,
+          outgoing: true,
+          timeline: ['Referral sent to HUH Cardiology']
+        }
+      ];
+
+      const state = { tab: 'Outgoing', filter: 'All' };
+      const detailState = { code: null, contextTab: 'Outgoing', activityOpen: false };
+
+      referrals.forEach((ref) => {
+        ref.reason = ref.reason || 'Suspicious mass found on imaging';
+        ref.attachments = ref.attachments || ['Mammogram Report (PDF)', 'Physician Notes (PDF)'];
+        ref.referringProvider = ref.referringProvider || {
+          name: 'Dr. Sarah Smith',
+          clinic: ref.referringClinic,
+          date: ref.date,
+          contact: '(202) 555-7890'
+        };
+        ref.appointment = ref.appointment || {
+          datetime: ref.date + ' 9:00 AM',
+          location: ref.specialistClinic,
+          attending: 'Dr. May Tee'
+        };
+        ref.outcomeSummary = ref.outcomeSummary || null;
+        ref.outcomeDocuments = ref.outcomeDocuments || [];
+        if (ref.status === 'Completed' && !ref.outcomeSummary) {
+          ref.outcomeSummary = {
+            outcome: 'Evaluation completed',
+            dateSeen: ref.date,
+            nextSteps: 'Return to referring provider',
+            codes: 'C50.911, 77067',
+            docsSent: 'Yes'
+          };
+          ref.outcomeDocuments = ['Consultation Note (PDF)', 'Pathology Report (PDF)', 'Procedure Summary (PDF)'];
+        }
+        ref.timeline = (ref.timeline || []).map((t) =>
+          typeof t === 'string' ? { event: t, date: ref.date } : t
+        );
+        ref.unreadIncoming = typeof ref.unreadIncoming === 'boolean' ? ref.unreadIncoming : (!!ref.incoming && ref.status === 'Pending');
+        ref.unreadOutgoing = typeof ref.unreadOutgoing === 'boolean' ? ref.unreadOutgoing : false;
+      });
+
+      const sidebar = document.getElementById('sidebar');
+      const brandHomeBtn = document.getElementById('brandHomeBtn');
+      const navDashboardBtn = document.getElementById('navDashboardBtn');
+      const navInboxBtn = document.getElementById('navInboxBtn');
+      const navAnalyticsBtn = document.getElementById('navAnalyticsBtn');
+      const collapseBtn = document.getElementById('collapseBtn');
+      const dashboardView = document.getElementById('dashboardView');
+      const inboxView = document.getElementById('inboxView');
+      const analyticsView = document.getElementById('analyticsView');
+      const referralView = document.getElementById('referralView');
+      const bookingView = document.getElementById('bookingView');
+      const summaryView = document.getElementById('summaryView');
+      const outcomeSentView = document.getElementById('outcomeSentView');
+      const outcomeView = document.getElementById('outcomeView');
+      const newReferralBtn = document.getElementById('newReferralBtn');
+      const cancelReferralBtn = document.getElementById('cancelReferralBtn');
+      const nextReferralBtn = document.getElementById('nextReferralBtn');
+      const backToReferralBtn = document.getElementById('backToReferralBtn');
+      const bookConfirmBtn = document.getElementById('bookConfirmBtn');
+      const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+      const specialtySelect = document.getElementById('specialtySelect');
+      const specialtyInput = document.getElementById('specialty');
+      const specialtyToggleBtn = document.getElementById('specialtyToggleBtn');
+      const specialtyMenu = document.getElementById('specialtyMenu');
+      const subspecialtyField = document.getElementById('subspecialtyField');
+      const subspecialtySelect = document.getElementById('subspecialtySelect');
+      const subspecialtyInput = document.getElementById('subspecialty');
+      const subspecialtyToggleBtn = document.getElementById('subspecialtyToggleBtn');
+      const subspecialtyMenu = document.getElementById('subspecialtyMenu');
+      const specialistSearchInput = document.getElementById('specialistSearch');
+      const providerList = document.getElementById('providerList');
+      const summaryProviderLine = document.getElementById('summaryProviderLine');
+      const summaryPatientLine = document.getElementById('summaryPatientLine');
+      const summaryInsuranceLine = document.getElementById('summaryInsuranceLine');
+      const outcomeSentLine = document.getElementById('outcomeSentLine');
+      const outcomeSentBackReferralBtn = document.getElementById('outcomeSentBackReferralBtn');
+      const outcomeSentBackDashboardBtn = document.getElementById('outcomeSentBackDashboardBtn');
+      const fromToHeader = document.getElementById('fromToHeader');
+      const detailView = document.getElementById('detailView');
+      const detailHeading = document.getElementById('detailHeading');
+      const detailStatusChip = document.getElementById('detailStatusChip');
+      const detailBackBtn = document.getElementById('detailBackBtn');
+      const specialistWorkflowView = document.getElementById('specialistWorkflowView');
+      const detailPatientCard = document.getElementById('detailPatientCard');
+      const detailSummaryCard = document.getElementById('detailSummaryCard');
+      const detailProviderCard = document.getElementById('detailProviderCard');
+      const detailOutcomeWrap = document.getElementById('detailOutcomeWrap');
+      const detailOutcomeCard = document.getElementById('detailOutcomeCard');
+      const detailMiddleWrap = document.getElementById('detailMiddleWrap');
+      const detailTimeline = document.getElementById('detailTimeline');
+      const specialistActions = document.getElementById('specialistActions');
+      const referringReadOnlyNote = document.getElementById('referringReadOnlyNote');
+      const standardDetailContent = document.getElementById('standardDetailContent');
+      const pendingSpecialistView = document.getElementById('pendingSpecialistView');
+      const pendingCodeLine = document.getElementById('pendingCodeLine');
+      const pendingPatientCard = document.getElementById('pendingPatientCard');
+      const pendingSummaryCard = document.getElementById('pendingSummaryCard');
+      const pendingProviderCard = document.getElementById('pendingProviderCard');
+      const pendingConfirmBtn = document.getElementById('pendingConfirmBtn');
+      const pendingCancelBtn = document.getElementById('pendingCancelBtn');
+      const pendingBackBtn = document.getElementById('pendingBackBtn');
+      const scheduleModal = document.getElementById('scheduleModal');
+      const scheduleCloseBtn = document.getElementById('scheduleCloseBtn');
+      const scheduleDismissBtn = document.getElementById('scheduleDismissBtn');
+      const scheduleDateInput = document.getElementById('scheduleDateInput');
+      const scheduleSaveBtn = document.getElementById('scheduleSaveBtn');
+      const cancelModal = document.getElementById('cancelModal');
+      const cancelTitle = document.getElementById('cancelTitle');
+      const cancelCloseBtn = document.getElementById('cancelCloseBtn');
+      const cancelDismissBtn = document.getElementById('cancelDismissBtn');
+      const cancelReasonSelect = document.getElementById('cancelReasonSelect');
+      const cancelOtherReasonInput = document.getElementById('cancelOtherReasonInput');
+      const cancelSubmitBtn = document.getElementById('cancelSubmitBtn');
+      const outcomeCodeLine = document.getElementById('outcomeCodeLine');
+      const outcomeBackBtn = document.getElementById('outcomeBackBtn');
+      const outcomePatientCard = document.getElementById('outcomePatientCard');
+      const outcomeSummaryCard = document.getElementById('outcomeSummaryCard');
+      const outcomeProviderCard = document.getElementById('outcomeProviderCard');
+      const outcomeOpenCompletedBtn = document.getElementById('outcomeOpenCompletedBtn');
+      const outcomeOpenNoShowBtn = document.getElementById('outcomeOpenNoShowBtn');
+      const outcomeOpenRescheduleBtn = document.getElementById('outcomeOpenRescheduleBtn');
+      const outcomeOpenCancelBtn = document.getElementById('outcomeOpenCancelBtn');
+      const outcomeExpanded = document.getElementById('outcomeExpanded');
+      const outcomeToast = document.getElementById('outcomeToast');
+      const kpis = document.getElementById('kpis');
+      const tableBody = document.getElementById('tableBody');
+      const inboxItems = document.getElementById('inboxItems');
+      const inboxDetailHead = document.getElementById('inboxDetailHead');
+      const inboxDetailBody = document.getElementById('inboxDetailBody');
+      const inboxSearchInput = document.getElementById('inboxSearchInput');
+      const inboxReplyInput = document.getElementById('inboxReplyInput');
+      const inboxSendBtn = document.getElementById('inboxSendBtn');
+
+      const bookingProviders = [
+        {
+          name: 'Dr. May Tee',
+          org: 'HUH Oncology',
+          specialty: 'Oncology',
+          languages: 'English • Vietnamese',
+          insurance: 'Medicaid / Medicare',
+          recommended: true
+        },
+        {
+          name: 'Dr. Sarah Smith',
+          org: "Mary's Center Oncology",
+          specialty: 'Oncology',
+          languages: 'English • Spanish',
+          insurance: 'CareFirst • Medicaid'
+        },
+        {
+          name: 'Dr. Philip Chan',
+          org: 'City Clinic Oncology',
+          specialty: 'Oncology',
+          languages: 'English • Mandarin',
+          insurance: 'Cigna • Medicare'
+        }
+      ];
+
+      const bookingState = {
+        providerIndex: null,
+        search: ''
+      };
+
+      const specialtyCatalog = [
+        'Oncology',
+        'Orthopedics',
+        'Pediatrics',
+        'Cardiology',
+        'Gastroenterology',
+        'Endocrinology',
+        'Neurology',
+        'Pulmonology',
+        'Nephrology',
+        'Urology',
+        'OB/GYN',
+        'Dermatology',
+        'Ophthalmology',
+        'ENT (Otolaryngology)',
+        'Behavioral Health / Psychiatry',
+        'Rheumatology',
+        'Infectious Disease',
+        'Hematology'
+      ];
+
+      const subspecialtyCatalog = {
+        Orthopedics: [
+          'General Orthopedics',
+          'Spine',
+          'Sports Medicine',
+          'Hand/Wrist',
+          'Foot/Ankle',
+          'Hip/Knee',
+          'Unsure'
+        ],
+        Cardiology: [
+          'General Cardiology',
+          'Electrophysiology',
+          'Heart Failure',
+          'Interventional',
+          'Unsure'
+        ],
+        Neurology: [
+          'General Neurology',
+          'Stroke',
+          'Epilepsy',
+          'Movement Disorders',
+          'Neuromuscular',
+          'Unsure'
+        ],
+        Urology: [
+          'General Urology',
+          "Men's Health",
+          'Female Pelvic Medicine',
+          'Oncology/Urologic Oncology',
+          'Stone Disease',
+          'Unsure'
+        ]
+      };
+
+      const dropdownState = {
+        specialtyOpen: false,
+        subspecialtyOpen: false
+      };
+
+      const inboxState = {
+        filter: 'All',
+        search: '',
+        selectedId: 'msg-1'
+      };
+
+      const inboxMessages = [
+        {
+          id: 'msg-1',
+          sender: "Mary's Center",
+          subject: 'Referral Request: Cardiology',
+          preview: 'Referral Request: Cardiology',
+          time: '2:45 PM',
+          body: 'Patient referral for cardiology. Please confirm receipt and availability for scheduling.',
+          attachments: ['ReferralReport.pdf', 'Analytics.xlsx'],
+          unread: true,
+          flagged: false,
+          archived: false
+        },
+        {
+          id: 'msg-2',
+          sender: 'Unity Health Care',
+          subject: 'Follow-Up: Imaging Results',
+          preview: 'Follow-Up: Imaging Results',
+          time: '1:18 PM',
+          body: 'Imaging results are attached for your review before next appointment.',
+          attachments: ['ImagingResults.pdf'],
+          unread: true,
+          flagged: true,
+          archived: false
+        },
+        {
+          id: 'msg-3',
+          sender: 'Howard Internal Medicine',
+          subject: 'New Referral: Neurology',
+          preview: 'New Referral: Neurology',
+          time: 'Yesterday',
+          body: 'New referral submitted for neurology consultation.',
+          attachments: [],
+          unread: false,
+          flagged: false,
+          archived: false
+        },
+        {
+          id: 'msg-4',
+          sender: 'Comprehensive Primary Care',
+          subject: 'Completed Referral Report',
+          preview: 'Completed Referral Report',
+          time: 'Yesterday',
+          body: 'Please review the completed referral report attached.',
+          attachments: ['CompletedReferral.pdf'],
+          unread: false,
+          flagged: false,
+          archived: false
+        },
+        {
+          id: 'msg-5',
+          sender: "Mary's Center",
+          subject: 'Lab Results Update',
+          preview: 'Lab Results Update',
+          time: '2 days ago',
+          body: 'Latest lab results have been posted to the patient chart.',
+          attachments: ['LabResults.pdf'],
+          unread: false,
+          flagged: false,
+          archived: false
+        },
+        {
+          id: 'msg-6',
+          sender: 'Unity Health Care',
+          subject: 'Referral Coordination Meeting',
+          preview: 'Referral Coordination Meeting',
+          time: '3 days ago',
+          body: 'Can we coordinate referral workflow improvements this week?',
+          attachments: [],
+          unread: false,
+          flagged: false,
+          archived: true
+        }
+      ];
+
+      const outcomeState = {
+        code: null,
+        section: null,
+        outcome: '',
+        outcomeOther: '',
+        next: '',
+        nextOther: '',
+        codes: '',
+        seenDate: '',
+        notes: '',
+        uploadedDocs: [],
+        cancelReason: '',
+        cancelOther: '',
+        noShowNotes: ''
+      };
+
+      const scheduleState = {
+        code: null,
+        mode: 'scheduled'
+      };
+
+      let cancelMode = 'cancel';
+
+      function formatDateShort(d) {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
+      function markReferralRead(ref, contextTab) {
+        if (!ref) return;
+        if (contextTab === 'Incoming') {
+          ref.unreadIncoming = false;
+          return;
+        }
+        ref.unreadOutgoing = false;
+      }
+
+      function markOutgoingUpdate(ref) {
+        if (!ref) return;
+        ref.unreadOutgoing = true;
+      }
+
+      function matchCatalogValue(inputValue, options) {
+        const normalized = (inputValue || '').trim().toLowerCase();
+        if (!normalized) return '';
+        return options.find((option) => option.toLowerCase() === normalized) || '';
+      }
+
+      function filterCatalogOptions(inputValue, options) {
+        const normalized = (inputValue || '').trim().toLowerCase();
+        if (!normalized) return options;
+        return options.filter((option) => option.toLowerCase().includes(normalized));
+      }
+
+      function closeDropdown(kind) {
+        if (kind === 'specialty') {
+          dropdownState.specialtyOpen = false;
+          specialtyMenu.classList.add('hidden');
+          return;
+        }
+        dropdownState.subspecialtyOpen = false;
+        subspecialtyMenu.classList.add('hidden');
+      }
+
+      function openDropdown(kind) {
+        if (kind === 'specialty') {
+          dropdownState.specialtyOpen = true;
+          specialtyMenu.classList.remove('hidden');
+          closeDropdown('subspecialty');
+          return;
+        }
+        dropdownState.subspecialtyOpen = true;
+        subspecialtyMenu.classList.remove('hidden');
+        closeDropdown('specialty');
+      }
+
+      function renderDropdownMenu(kind, options, inputValue) {
+        const menu = kind === 'specialty' ? specialtyMenu : subspecialtyMenu;
+        const filtered = filterCatalogOptions(inputValue, options);
+        if (!filtered.length) {
+          menu.innerHTML = '<p class="search-select-empty">No matches found.</p>';
+          return;
+        }
+        const activeValue = matchCatalogValue(inputValue, options);
+        menu.innerHTML = filtered
+          .map((option) =>
+            '<button class="search-select-option' + (option === activeValue ? ' active' : '') + '" type="button" data-' + kind + '-option="' + option.replace(/"/g, '&quot;') + '">' + option + '</button>'
+          )
+          .join('');
+      }
+
+      function selectDropdownOption(kind, value) {
+        if (kind === 'specialty') {
+          specialtyInput.value = value;
+          syncSubspecialtyField();
+          closeDropdown('specialty');
+          specialtyInput.focus();
+          return;
+        }
+        subspecialtyInput.value = value;
+        closeDropdown('subspecialty');
+        subspecialtyInput.focus();
+      }
+
+      function syncSubspecialtyField() {
+        const selectedSpecialty = matchCatalogValue(specialtyInput.value, specialtyCatalog);
+        const nextOptions = subspecialtyCatalog[selectedSpecialty] || [];
+
+        if (!nextOptions.length) {
+          subspecialtyField.classList.add('hidden');
+          subspecialtyInput.value = '';
+          closeDropdown('subspecialty');
+          subspecialtyMenu.innerHTML = '';
+          return;
+        }
+
+        subspecialtyField.classList.remove('hidden');
+        subspecialtyInput.placeholder = 'Select or search ' + selectedSpecialty.toLowerCase() + ' subspecialty';
+        renderDropdownMenu('subspecialty', nextOptions, subspecialtyInput.value);
+
+        const selectedSubspecialty = matchCatalogValue(subspecialtyInput.value, nextOptions);
+        if (!selectedSubspecialty && subspecialtyInput.value.trim()) {
+          subspecialtyInput.value = '';
+        }
+      }
+
+      function nextReferralCode() {
+        const max = referrals.reduce((m, r) => {
+          const match = r.code.match(/CSH-\d{2}-(\d+)/);
+          const n = match ? Number(match[1]) : 0;
+          return n > m ? n : m;
+        }, 0);
+        return 'CSH-25-' + String(max + 1).padStart(4, '0');
+      }
+
+      function assetsForSpecialty(specialty) {
+        const map = {
+          Oncology: {
+            reason: 'Suspicious mass found on imaging',
+            attachments: ['Mammogram Report (PDF)', 'Oncology Referral Notes (PDF)'],
+            outcomeDocs: ['Consultation Note (PDF)', 'Pathology Report (PDF)', 'Procedure Summary (PDF)']
+          },
+          Cardiology: {
+            reason: 'Abnormal ECG requiring specialist evaluation',
+            attachments: ['ECG Report (PDF)', 'Cardiology Referral Packet (PDF)'],
+            outcomeDocs: ['Cardiology Consult Note (PDF)', 'Echocardiogram Summary (PDF)', 'Care Plan (PDF)']
+          },
+          Orthopedics: {
+            reason: 'Joint pain with functional limitation',
+            attachments: ['X-Ray Report (PDF)', 'Orthopedic Exam Notes (PDF)'],
+            outcomeDocs: ['Orthopedic Consult Note (PDF)', 'Imaging Review (PDF)', 'Rehab Plan (PDF)']
+          },
+          Gastroenterology: {
+            reason: 'Persistent GI symptoms requiring specialist review',
+            attachments: ['GI Lab Results (PDF)', 'Primary Care GI Notes (PDF)'],
+            outcomeDocs: ['GI Consult Note (PDF)', 'Procedure Findings (PDF)', 'Follow-up Plan (PDF)']
+          },
+          Pediatrics: {
+            reason: 'Pediatric specialty evaluation requested',
+            attachments: ['Pediatric Progress Notes (PDF)', 'Growth Chart Summary (PDF)'],
+            outcomeDocs: ['Pediatric Consult Note (PDF)', 'Assessment Summary (PDF)', 'Care Instructions (PDF)']
+          }
+        };
+        return map[specialty] || {
+          reason: (specialty ? specialty + ' evaluation requested' : 'Specialty evaluation requested'),
+          attachments: [(specialty || 'Specialty') + ' Referral Notes (PDF)', 'Recent Clinical Summary (PDF)'],
+          outcomeDocs: ['Consultation Note (PDF)', 'Assessment Summary (PDF)', 'Follow-up Plan (PDF)']
+        };
+      }
+
+      function findReferral(code) {
+        return referrals.find((r) => r.code === code);
+      }
+
+      function updateReferralStatus(ref, status, timelineMessage, updatedLabel, options = {}) {
+        ref.status = status;
+        ref.updated = updatedLabel || 'Just now';
+        if (timelineMessage) {
+          if (!Array.isArray(ref.timeline)) ref.timeline = [];
+          ref.timeline.push({
+            event: timelineMessage,
+            date: formatDateShort(new Date())
+          });
+        }
+        if (options.markOutgoingUnread) markOutgoingUpdate(ref);
+      }
+
+      function getTimelineDisplay(ref, contextTab) {
+        const starter = contextTab === 'Incoming'
+          ? 'Referral received from ' + (ref.referringClinic || 'Referring provider')
+          : 'Referral sent to ' + (ref.specialistClinic || 'Specialist clinic');
+        const starterDate = ref.referringProvider?.date || ref.date || formatDateShort(new Date());
+
+        const cleaned = (ref.timeline || [])
+          .map((t) => (typeof t === 'string' ? { event: t, date: ref.date } : t))
+          .filter((t) => {
+            const e = (t.event || '').toLowerCase();
+            if (e.includes('awaiting specialist confirmation')) return false;
+            if (e.includes('referral created by referring provider')) return false;
+            if (e.includes('appointment booked for')) return false;
+            if (e.startsWith('referral sent to')) return false;
+            if (e.startsWith('referral received from')) return false;
+            return true;
+          });
+
+        return [{ event: starter, date: starterDate }, ...cleaned];
+      }
+
+      function syncScheduleSave() {
+        const ready = !!scheduleDateInput.value;
+        scheduleSaveBtn.disabled = !ready;
+        scheduleSaveBtn.classList.toggle('enabled', ready);
+      }
+
+      function openScheduleModal(code, mode) {
+        scheduleState.code = code;
+        scheduleState.mode = mode || 'scheduled';
+        scheduleDateInput.value = '';
+        scheduleSaveBtn.disabled = true;
+        scheduleSaveBtn.classList.remove('enabled');
+        document.getElementById('scheduleTitle').textContent = mode === 'rescheduled' ? 'Reschedule Referral' : 'Schedule Referral';
+        scheduleModal.classList.remove('hidden');
+      }
+
+      function closeScheduleModal() {
+        scheduleModal.classList.add('hidden');
+        scheduleDateInput.value = '';
+        scheduleState.code = null;
+        scheduleState.mode = 'scheduled';
+        syncScheduleSave();
+      }
+
+      function openCancelModal(mode) {
+        cancelMode = mode || 'cancel';
+        cancelTitle.textContent = cancelMode === 'decline' ? 'Decline Referral' : 'Cancel Referral';
+        document.querySelector('#cancelModal .modal-text').textContent = cancelMode === 'decline'
+          ? 'Select the reason for declining this referral.'
+          : 'Select the reason for cancelling this referral.';
+        cancelModal.classList.remove('hidden');
+      }
+
+      collapseBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+      });
+
+      function setActiveNav(active) {
+        navDashboardBtn.classList.toggle('active', active === 'dashboard');
+        navInboxBtn.classList.toggle('active', active === 'inbox');
+        navAnalyticsBtn.classList.toggle('active', active === 'analytics');
+      }
+
+      function showDashboard() {
+        closeScheduleModal();
+        closeCancelModal();
+        setActiveNav('dashboard');
+        dashboardView.classList.remove('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+        render();
+      }
+
+      function showInbox() {
+        closeScheduleModal();
+        closeCancelModal();
+        setActiveNav('inbox');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.remove('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+        renderInbox();
+      }
+
+      function showAnalytics() {
+        closeScheduleModal();
+        closeCancelModal();
+        setActiveNav('analytics');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.remove('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+      }
+
+      function showReferral() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.remove('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+      }
+
+      function showBooking() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.remove('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+        renderBooking();
+      }
+
+      function showSummary() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.remove('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+      }
+
+      function showDetail() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.remove('hidden');
+        outcomeView.classList.add('hidden');
+      }
+
+      function showOutcome() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.remove('hidden');
+      }
+
+      function showOutcomeSent() {
+        setActiveNav('');
+        dashboardView.classList.add('hidden');
+        inboxView.classList.add('hidden');
+        analyticsView.classList.add('hidden');
+        referralView.classList.add('hidden');
+        bookingView.classList.add('hidden');
+        summaryView.classList.add('hidden');
+        outcomeSentView.classList.remove('hidden');
+        detailView.classList.add('hidden');
+        outcomeView.classList.add('hidden');
+      }
+
+      function renderOutcomeSentConfirmation() {
+        const ref = findReferral(detailState.code);
+        if (!ref) return;
+      }
+
+      newReferralBtn.addEventListener('click', showReferral);
+      cancelReferralBtn.addEventListener('click', showDashboard);
+      nextReferralBtn.addEventListener('click', showBooking);
+      backToReferralBtn.addEventListener('click', showReferral);
+      backToDashboardBtn.addEventListener('click', showDashboard);
+      outcomeSentBackReferralBtn.addEventListener('click', () => {
+        showDetail();
+        renderDetail();
+      });
+      outcomeSentBackDashboardBtn.addEventListener('click', showDashboard);
+      detailBackBtn.addEventListener('click', showDashboard);
+      pendingBackBtn.addEventListener('click', showDashboard);
+      navDashboardBtn.addEventListener('click', showDashboard);
+      navInboxBtn.addEventListener('click', showInbox);
+      navAnalyticsBtn.addEventListener('click', showAnalytics);
+      brandHomeBtn.addEventListener('click', showDashboard);
+      outcomeBackBtn.addEventListener('click', () => {
+        if (outcomeState.code) {
+          detailState.code = outcomeState.code;
+          detailState.contextTab = 'Incoming';
+          renderDetail();
+          showDetail();
+          return;
+        }
+        showDashboard();
+      });
+
+      specialtyInput.addEventListener('focus', () => {
+        renderDropdownMenu('specialty', specialtyCatalog, specialtyInput.value);
+        openDropdown('specialty');
+      });
+      specialtyInput.addEventListener('input', () => {
+        renderDropdownMenu('specialty', specialtyCatalog, specialtyInput.value);
+        openDropdown('specialty');
+        syncSubspecialtyField();
+      });
+      specialtyInput.addEventListener('change', syncSubspecialtyField);
+      specialtyToggleBtn.addEventListener('click', () => {
+        renderDropdownMenu('specialty', specialtyCatalog, specialtyInput.value);
+        if (dropdownState.specialtyOpen) {
+          closeDropdown('specialty');
+        } else {
+          openDropdown('specialty');
+          specialtyInput.focus();
+        }
+      });
+      specialtyMenu.addEventListener('click', (event) => {
+        const option = event.target.closest('[data-specialty-option]');
+        if (!option) return;
+        selectDropdownOption('specialty', option.getAttribute('data-specialty-option'));
+      });
+
+      subspecialtyInput.addEventListener('focus', () => {
+        const selectedSpecialty = matchCatalogValue(specialtyInput.value, specialtyCatalog);
+        const allowed = subspecialtyCatalog[selectedSpecialty] || [];
+        if (!allowed.length) return;
+        renderDropdownMenu('subspecialty', allowed, subspecialtyInput.value);
+        openDropdown('subspecialty');
+      });
+      subspecialtyInput.addEventListener('input', () => {
+        const selectedSpecialty = matchCatalogValue(specialtyInput.value, specialtyCatalog);
+        const allowed = subspecialtyCatalog[selectedSpecialty] || [];
+        if (!allowed.length) return;
+        renderDropdownMenu('subspecialty', allowed, subspecialtyInput.value);
+        openDropdown('subspecialty');
+      });
+      subspecialtyInput.addEventListener('change', () => {
+        const selectedSpecialty = matchCatalogValue(specialtyInput.value, specialtyCatalog);
+        const allowed = subspecialtyCatalog[selectedSpecialty] || [];
+        const matched = matchCatalogValue(subspecialtyInput.value, allowed);
+        if (!matched && subspecialtyInput.value.trim()) {
+          subspecialtyInput.value = '';
+        }
+      });
+      subspecialtyToggleBtn.addEventListener('click', () => {
+        const selectedSpecialty = matchCatalogValue(specialtyInput.value, specialtyCatalog);
+        const allowed = subspecialtyCatalog[selectedSpecialty] || [];
+        if (!allowed.length) return;
+        renderDropdownMenu('subspecialty', allowed, subspecialtyInput.value);
+        if (dropdownState.subspecialtyOpen) {
+          closeDropdown('subspecialty');
+        } else {
+          openDropdown('subspecialty');
+          subspecialtyInput.focus();
+        }
+      });
+      subspecialtyMenu.addEventListener('click', (event) => {
+        const option = event.target.closest('[data-subspecialty-option]');
+        if (!option) return;
+        selectDropdownOption('subspecialty', option.getAttribute('data-subspecialty-option'));
+      });
+      document.addEventListener('click', (event) => {
+        if (!specialtySelect.contains(event.target)) closeDropdown('specialty');
+        if (!subspecialtySelect.contains(event.target)) closeDropdown('subspecialty');
+      });
+
+      function syncBookButton() {
+        const canBook = bookingState.providerIndex !== null;
+        bookConfirmBtn.disabled = !canBook;
+        bookConfirmBtn.style.opacity = canBook ? '1' : '.55';
+        bookConfirmBtn.style.cursor = canBook ? 'pointer' : 'not-allowed';
+      }
+
+      function filteredProviders() {
+        const query = bookingState.search.trim().toLowerCase();
+        if (!query) return bookingProviders;
+        return bookingProviders.filter((provider) => {
+          const haystack = [
+            provider.name,
+            provider.org,
+            provider.specialty,
+            provider.languages,
+            provider.insurance
+          ]
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+
+      function renderProviders() {
+        const initials = (name) =>
+          name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((n) => n[0])
+            .join('')
+            .toUpperCase();
+
+        const visibleProviders = filteredProviders();
+
+        if (!visibleProviders.length) {
+          providerList.innerHTML = '<p class="provider-empty">No specialists match that search yet. Try a different name, clinic, specialty, language, or insurance.</p>';
+          return;
+        }
+
+        providerList.innerHTML = visibleProviders
+          .map((p, idx) => {
+            const originalIndex = bookingProviders.indexOf(p);
+            const active = originalIndex === bookingState.providerIndex ? ' active' : '';
+            const rec = p.recommended
+              ? '<span class="rec-tag">AI Recommended</span>'
+              : '';
+            const selected = originalIndex === bookingState.providerIndex
+              ? '<span class="provider-selected">&#10003; Selected</span>'
+              : '';
+            const rightBlock = (rec || selected)
+              ? '<div class="provider-right">' + rec + selected + '</div>'
+              : '';
+
+            return (
+              '<button type="button" class="provider-card' + active + '" data-provider-idx="' + originalIndex + '">' +
+                '<div class="avatar">' + initials(p.name) + '</div>' +
+                '<div class="provider-main">' +
+                  '<p class="provider-title">' + p.name + '</p>' +
+                  '<p class="provider-meta">' + (p.specialty || 'Specialist') + '</p>' +
+                  '<p class="provider-meta">' + p.org + '</p>' +
+                  '<p class="provider-meta">' + p.languages + '</p>' +
+                  '<p class="provider-meta">' + p.insurance + '</p>' +
+                '</div>' +
+                rightBlock +
+              '</button>'
+            );
+          })
+          .join('');
+
+        providerList.querySelectorAll('[data-provider-idx]').forEach((el) => {
+          el.addEventListener('click', () => {
+            bookingState.providerIndex = Number(el.getAttribute('data-provider-idx'));
+            renderProviders();
+            syncBookButton();
+          });
+        });
+      }
+
+      function renderBooking() {
+        renderProviders();
+        syncBookButton();
+      }
+
+      bookConfirmBtn.addEventListener('click', () => {
+        if (bookConfirmBtn.disabled) return;
+        const provider = bookingProviders[bookingState.providerIndex];
+        const first = (document.getElementById('firstName').value || '').trim();
+        const last = (document.getElementById('lastName').value || '').trim();
+        const dob = document.getElementById('dob').value || '—';
+        const insurance = document.getElementById('insurance').value || '—';
+        const clinic = document.getElementById('clinic').value || provider.org;
+        const specialty = matchCatalogValue(specialtyInput.value, specialtyCatalog) || specialtyInput.value.trim() || 'General';
+        const subspecialtyOptionsForSpecialty = subspecialtyCatalog[specialty] || [];
+        const subspecialty = matchCatalogValue(subspecialtyInput.value, subspecialtyOptionsForSpecialty) || '';
+        const visitType = document.getElementById('visitType').value || 'Consultation';
+        const urgency = document.getElementById('urgency').value || 'Routine';
+        const referralReason = (document.getElementById('clinicalNotes').value || '').trim();
+        const specialtyAssets = assetsForSpecialty(specialty);
+
+        const patientName = (first || last) ? (first + ' ' + last).trim() : 'Patient';
+        const code = nextReferralCode();
+
+        referrals.unshift({
+          code,
+          patient: patientName,
+          dob,
+          insurance,
+          specialty,
+          subspecialty,
+          visitType,
+          urgency,
+          reason: referralReason || specialtyAssets.reason,
+          attachments: specialtyAssets.attachments,
+          referringClinic: 'C-Suite Health',
+          specialistClinic: clinic,
+          referringProvider: {
+            name: 'Dr. Robin Williams',
+            clinic: 'C-Suite Health',
+            date: formatDateShort(new Date()),
+            contact: '(202) 555-0100'
+          },
+          appointment: null,
+          status: 'Pending',
+          date: formatDateShort(new Date()),
+          updated: 'Just now',
+          incoming: true,
+          outgoing: true,
+          unreadIncoming: true,
+          unreadOutgoing: false,
+          outcomeSummary: null,
+          outcomeDocuments: specialtyAssets.outcomeDocs,
+          timeline: [
+            { event: 'Referral created by referring provider', date: formatDateShort(new Date()) },
+            { event: 'Awaiting specialist confirmation', date: formatDateShort(new Date()) }
+          ]
+        });
+
+        summaryProviderLine.textContent = 'Referral sent to ' + provider.name + ' at ' + provider.org;
+        summaryPatientLine.textContent = 'Patient: ' + patientName + ' (DOB ' + dob + ')';
+        summaryInsuranceLine.textContent = 'Insurance: ' + insurance + ' • Status: Pending specialist review';
+        showSummary();
+      });
+
+      specialistSearchInput.addEventListener('input', () => {
+        bookingState.search = specialistSearchInput.value || '';
+        const selectedProvider = bookingState.providerIndex !== null
+          ? bookingProviders[bookingState.providerIndex]
+          : null;
+        if (selectedProvider && !filteredProviders().includes(selectedProvider)) {
+          bookingState.providerIndex = null;
+        }
+        renderProviders();
+        syncBookButton();
+      });
+
+      document.querySelectorAll('[data-tab]').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.tab = el.dataset.tab;
+          state.filter = 'All';
+          syncButtons();
+          render();
+        });
+      });
+
+      document.querySelectorAll('[data-filter]').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.filter = el.dataset.filter;
+          syncButtons();
+          render();
+        });
+      });
+
+      document.querySelectorAll('[data-inbox-filter]').forEach((el) => {
+        el.addEventListener('click', () => {
+          inboxState.filter = el.dataset.inboxFilter;
+          document.querySelectorAll('[data-inbox-filter]').forEach((f) => {
+            f.classList.toggle('active', f.dataset.inboxFilter === inboxState.filter);
+          });
+          renderInbox();
+        });
+      });
+
+      inboxSearchInput.addEventListener('input', () => {
+        inboxState.search = inboxSearchInput.value || '';
+        renderInbox();
+      });
+
+      inboxSendBtn.addEventListener('click', () => {
+        inboxReplyInput.value = '';
+      });
+
+      function getRows() {
+        const rows = referrals
+          .filter((r) => (state.tab === 'Incoming' ? r.incoming : r.outgoing))
+          .map((r) => ({
+            ...r,
+            from: state.tab === 'Incoming' ? r.referringClinic : r.specialistClinic,
+            displayStatus: topLevelStatus(r)
+          }));
+        if (state.filter === 'All') return rows;
+        return rows.filter((r) => r.displayStatus === state.filter);
+      }
+
+      function syncButtons() {
+        document.querySelectorAll('[data-tab]').forEach((b) => {
+          b.classList.toggle('active', b.dataset.tab === state.tab);
+        });
+        document.querySelectorAll('[data-filter]').forEach((b) => {
+          b.classList.toggle('active', b.dataset.filter === state.filter);
+        });
+        fromToHeader.textContent = state.tab === 'Outgoing' ? 'To' : 'From';
+      }
+
+      function statusClass(status) {
+        if (status === 'Pending') return 'pending';
+        if (status === 'Needs Attention') return 'needsattention';
+        if (status === 'Accepted') return 'accepted';
+        if (status === 'Declined') return 'declined';
+        if (status === 'Completed') return 'completed';
+        if (status === 'Cancelled') return 'cancelled';
+        if (status === 'Canceled') return 'canceled';
+        if (status === 'Patient Declined') return 'patientdeclined';
+        if (status === 'Unable to Reach') return 'unablereach';
+        if (status === 'Rescheduled') return 'rescheduled';
+        if (status === 'No Show') return 'noshow';
+        if (status === 'No-show') return 'noshow';
+        return 'scheduled';
+      }
+
+      function parseWorkflowDate(value) {
+        if (!value) return null;
+        const normalized = String(value)
+          .replace(/\s+•.*$/, '')
+          .replace(/\d{1,2}:\d{2}\s*[AP]M$/i, '')
+          .trim();
+        const parsed = new Date(normalized);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      function topLevelStatus(ref) {
+        const status = ref.status;
+
+        if (status === 'Completed') return 'Completed';
+        if (status === 'No-show' || status === 'No Show') return 'No Show';
+        if (status === 'Declined' || status === 'Patient Declined' || status === 'Canceled' || status === 'Cancelled') {
+          return 'Cancelled';
+        }
+
+        if (status === 'Scheduled' || status === 'Rescheduled') {
+          const appointmentDate = parseWorkflowDate(ref.appointment?.datetime || ref.date);
+          if (appointmentDate && new Date() > appointmentDate) {
+            return 'Pending';
+          }
+          return 'Scheduled';
+        }
+
+        if (status === 'Pending' || status === 'Accepted' || status === 'Unable to Reach') {
+          return 'Pending';
+        }
+
+        return 'Pending';
+      }
+
+      function renderKpis(rows) {
+        const total = rows.length;
+        const completed = rows.filter((r) => r.displayStatus === 'Completed').length;
+        const rate = total ? Math.round((completed / total) * 100) : 0;
+
+        kpis.innerHTML = [
+          { label: 'Total Referrals', value: total },
+          { label: '% Completed', value: rate + '%' },
+          { label: 'Active Partners', value: 8 }
+        ]
+          .map(
+            (k) =>
+              '<article class="card kpi-card">' +
+              '<div class="kpi-label">' + k.label + '</div>' +
+              '<div class="kpi-value">' + k.value + '</div>' +
+              '</article>'
+          )
+          .join('');
+      }
+
+      function renderTable(rows) {
+        if (!rows.length) {
+          tableBody.innerHTML = '<tr><td class="empty" colspan="6">No referrals found.</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = rows
+          .map(
+            (r) => {
+              const unread = state.tab === 'Incoming' ? r.unreadIncoming : r.unreadOutgoing;
+              return '<tr class="' + (unread ? 'unread-row' : '') + '">' +
+              '<td class="ref"><a href="#" data-open-code="' + r.code + '">' + r.code + '</a></td>' +
+              '<td>' + r.patient + '</td>' +
+              '<td>' + r.from + '</td>' +
+              '<td class="status-cell"><span class="status ' + statusClass(r.displayStatus) + '">' + r.displayStatus + '</span></td>' +
+              '<td>' + r.date + '</td>' +
+              '<td>' + r.updated + '</td>' +
+              '</tr>';
+            }
+          )
+          .join('');
+
+        tableBody.querySelectorAll('[data-open-code]').forEach((el) => {
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            detailState.code = el.getAttribute('data-open-code');
+            detailState.contextTab = state.tab;
+            detailState.activityOpen = state.tab === 'Outgoing';
+            markReferralRead(findReferral(detailState.code), state.tab);
+            renderDetail();
+            showDetail();
+            render();
+          });
+        });
+      }
+
+      function inboxFilteredMessages() {
+        const q = inboxState.search.trim().toLowerCase();
+        return inboxMessages.filter((m) => {
+          if (inboxState.filter === 'Unread' && !m.unread) return false;
+          if (inboxState.filter === 'Flagged' && !m.flagged) return false;
+          if (inboxState.filter === 'Archived' && !m.archived) return false;
+          if (inboxState.filter === 'All' && m.archived) return false;
+          if (!q) return true;
+          return (
+            m.sender.toLowerCase().includes(q) ||
+            m.subject.toLowerCase().includes(q) ||
+            m.preview.toLowerCase().includes(q)
+          );
+        });
+      }
+
+      function renderInbox() {
+        const items = inboxFilteredMessages();
+        if (!items.find((m) => m.id === inboxState.selectedId)) {
+          inboxState.selectedId = items.length ? items[0].id : null;
+        }
+
+        inboxItems.innerHTML = items.map((m) =>
+          '<article class="inbox-item' + (m.id === inboxState.selectedId ? ' active' : '') + '" data-msg-id="' + m.id + '">' +
+            '<div class="inbox-item-top"><span>' + m.sender + '</span><span class="inbox-time">' + m.time + '</span></div>' +
+            '<div class="inbox-item-subject">' + m.preview + '</div>' +
+          '</article>'
+        ).join('');
+
+        inboxItems.querySelectorAll('[data-msg-id]').forEach((el) => {
+          el.addEventListener('click', () => {
+            inboxState.selectedId = el.getAttribute('data-msg-id');
+            renderInbox();
+          });
+        });
+
+        const selected = items.find((m) => m.id === inboxState.selectedId);
+        if (!selected) {
+          inboxDetailHead.innerHTML = '<h3 class="inbox-detail-title">No message selected</h3>';
+          inboxDetailBody.innerHTML = '';
+          return;
+        }
+
+        inboxDetailHead.innerHTML =
+          '<h3 class="inbox-detail-title">' + selected.subject + '</h3>' +
+          '<p class="inbox-detail-meta">From: ' + selected.sender + ' • ' + selected.time + '</p>';
+
+        inboxDetailBody.innerHTML =
+          '<p>' + selected.body + '</p>' +
+          (selected.attachments.length
+            ? '<p style="margin-top:14px; font-weight:700;">Attachments</p>' +
+              selected.attachments.map((a) => '<p style="margin:2px 0;"><a href="#">&#128206; ' + a + '</a></p>').join('')
+            : '');
+      }
+
+      function resetOutcomeState(code) {
+        outcomeState.code = code;
+        outcomeState.section = null;
+        outcomeState.outcome = '';
+        outcomeState.outcomeOther = '';
+        outcomeState.next = '';
+        outcomeState.nextOther = '';
+        outcomeState.codes = '';
+        outcomeState.seenDate = '';
+        outcomeState.notes = '';
+        outcomeState.uploadedDocs = [];
+        outcomeState.cancelReason = '';
+        outcomeState.cancelOther = '';
+        outcomeState.noShowNotes = '';
+      }
+
+      function renderOutcomeExpanded() {
+        const ref = findReferral(outcomeState.code);
+        if (!ref || !outcomeState.section) {
+          outcomeExpanded.innerHTML = '';
+          return;
+        }
+
+        if (outcomeState.section === 'completed') {
+          const valid = !!outcomeState.outcome &&
+            (outcomeState.outcome !== 'other' || outcomeState.outcomeOther.trim().length > 0);
+          outcomeExpanded.innerHTML =
+            '<section class="card table-wrap">' +
+              '<div class="form-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">' +
+                '<div class="field">' +
+                  '<label>Outcome *</label>' +
+                  '<select id="outcomeCompletedSelect" class="select">' +
+                    '<option value="">Select</option>' +
+                    '<option value="Evaluation completed">Evaluation completed</option>' +
+                    '<option value="Evaluation + procedure completed">Evaluation + procedure completed</option>' +
+                    '<option value="Follow-up visit scheduled">Follow-up visit scheduled</option>' +
+                    '<option value="Patient requires additional testing">Patient requires additional testing</option>' +
+                    '<option value="Patient requires specialist referral">Patient requires specialist referral</option>' +
+                    '<option value="other">Other</option>' +
+                  '</select>' +
+                '</div>' +
+                '<div class="field">' +
+                  '<label>Next step</label>' +
+                  '<select id="outcomeNextSelect" class="select">' +
+                    '<option value="">Select</option>' +
+                    '<option value="Return to referring provider">Return to referring provider</option>' +
+                    '<option value="Schedule follow-up visit">Schedule follow-up visit</option>' +
+                    '<option value="Pending diagnostic results">Pending diagnostic results</option>' +
+                    '<option value="No further action required">No further action required</option>' +
+                    '<option value="other">Other</option>' +
+                  '</select>' +
+                '</div>' +
+                '<div class="field">' +
+                  '<label>ICD-10/CPT</label>' +
+                  '<input id="outcomeCodesInput" class="input" type="text" placeholder="Optional: R92.8, 77067" value="' + (outcomeState.codes || '') + '">' +
+                '</div>' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Visit notes (max 1000)</label>' +
+                '<textarea id="outcomeNotesInput" class="textarea" maxlength="1000">' + (outcomeState.notes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Upload documentation (optional)</label>' +
+                '<input id="outcomeDocsInput" class="file-input" type="file" multiple>' +
+                (outcomeState.uploadedDocs.length
+                  ? '<p class="summary-subline" style="margin-top:6px;">Selected: ' + outcomeState.uploadedDocs.join(', ') + '</p>'
+                  : '') +
+              '</div>' +
+              '<div id="outcomeExtraInputs"></div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="outcomeCancelExpandBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="outcomeSaveCompleteBtn" class="new-btn" type="button"' + (valid ? '' : ' disabled style="opacity:.55;cursor:not-allowed;"') + '>Log Completion</button>' +
+              '</div>' +
+            '</section>';
+
+          document.getElementById('outcomeCompletedSelect').value = outcomeState.outcome;
+          document.getElementById('outcomeNextSelect').value = outcomeState.next;
+
+          const extras = document.getElementById('outcomeExtraInputs');
+          let extraHtml = '';
+          if (outcomeState.outcome === 'other') {
+            extraHtml += '<div class="field" style="margin-top:12px;"><label>Other outcome</label><input id="outcomeOtherInput" class="input" type="text" value="' + (outcomeState.outcomeOther || '') + '"></div>';
+          }
+          if (outcomeState.next === 'other') {
+            extraHtml += '<div class="field" style="margin-top:12px;"><label>Other next step</label><input id="outcomeNextOtherInput" class="input" type="text" value="' + (outcomeState.nextOther || '') + '"></div>';
+          }
+          extras.innerHTML = extraHtml;
+
+          document.getElementById('outcomeCompletedSelect').onchange = (e) => { outcomeState.outcome = e.target.value; renderOutcomeExpanded(); };
+          document.getElementById('outcomeNextSelect').onchange = (e) => { outcomeState.next = e.target.value; renderOutcomeExpanded(); };
+          document.getElementById('outcomeCodesInput').oninput = (e) => { outcomeState.codes = e.target.value; };
+          document.getElementById('outcomeNotesInput').oninput = (e) => { outcomeState.notes = e.target.value; };
+          document.getElementById('outcomeDocsInput').onchange = (e) => {
+            outcomeState.uploadedDocs = Array.from(e.target.files || []).map((f) => f.name);
+            renderOutcomeExpanded();
+          };
+          const otherInput = document.getElementById('outcomeOtherInput');
+          if (otherInput) otherInput.oninput = (e) => { outcomeState.outcomeOther = e.target.value; renderOutcomeExpanded(); };
+          const nextOtherInput = document.getElementById('outcomeNextOtherInput');
+          if (nextOtherInput) nextOtherInput.oninput = (e) => { outcomeState.nextOther = e.target.value; };
+          document.getElementById('outcomeCancelExpandBtn').onclick = () => { outcomeState.section = null; renderOutcomeExpanded(); };
+          document.getElementById('outcomeSaveCompleteBtn').onclick = () => {
+            if (!valid) return;
+            const outcomeLabel = outcomeState.outcome === 'other' ? outcomeState.outcomeOther.trim() : outcomeState.outcome;
+            const nextLabel = outcomeState.next === 'other' ? outcomeState.nextOther.trim() : outcomeState.next;
+            const outcomeDate = ref.appointment?.datetime ? String(ref.appointment.datetime).split(' • ')[0] : (ref.date || '—');
+            ref.outcomeSummary = {
+              outcome: outcomeLabel || 'Evaluation completed',
+              dateSeen: outcomeDate,
+              nextSteps: nextLabel || 'Return to referring provider',
+              codes: outcomeState.codes || '—',
+              docsSent: 'Yes'
+            };
+            if (!Array.isArray(ref.outcomeDocuments) || !ref.outcomeDocuments.length) {
+              ref.outcomeDocuments = assetsForSpecialty(ref.specialty).outcomeDocs;
+            }
+            if (outcomeState.uploadedDocs.length) {
+              const existing = Array.isArray(ref.outcomeDocuments) ? ref.outcomeDocuments : [];
+              const merged = [...existing, ...outcomeState.uploadedDocs];
+              ref.outcomeDocuments = Array.from(new Set(merged));
+            }
+            updateReferralStatus(ref, 'Completed', 'Outcome logged: Completed visit', 'Just now');
+            markOutgoingUpdate(ref);
+            detailState.code = ref.code;
+            detailState.contextTab = 'Incoming';
+            renderDetail();
+            showDetail();
+            render();
+          };
+          return;
+        }
+
+        if (outcomeState.section === 'noshow') {
+          outcomeExpanded.innerHTML =
+            '<section class="card table-wrap">' +
+              '<div class="field">' +
+                '<label>Visit notes (optional)</label>' +
+                '<textarea id="outcomeNoShowNotes" class="textarea" maxlength="1000">' + (outcomeState.noShowNotes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="outcomeCancelNoShowBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="outcomeSaveNoShowBtn" class="new-btn" type="button" style="background:#f97316;">Log No-Show</button>' +
+              '</div>' +
+            '</section>';
+          document.getElementById('outcomeNoShowNotes').oninput = (e) => { outcomeState.noShowNotes = e.target.value; };
+          document.getElementById('outcomeCancelNoShowBtn').onclick = () => { outcomeState.section = null; renderOutcomeExpanded(); };
+          document.getElementById('outcomeSaveNoShowBtn').onclick = () => {
+            ref.outcomeSummary = null;
+            updateReferralStatus(ref, 'No-show', 'Outcome logged: Patient no-show', 'Just now');
+            markOutgoingUpdate(ref);
+            detailState.code = ref.code;
+            detailState.contextTab = 'Incoming';
+            renderDetail();
+            showDetail();
+            render();
+          };
+          return;
+        }
+
+        if (outcomeState.section === 'reschedule') {
+          const valid = !!outcomeState.seenDate;
+          outcomeExpanded.innerHTML =
+            '<section class="card table-wrap">' +
+              '<div class="field">' +
+                '<label>New appointment date *</label>' +
+                '<input id="outcomeRescheduleDateInput" class="input" type="date" value="' + (outcomeState.seenDate || '') + '">' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Visit notes (optional)</label>' +
+                '<textarea id="outcomeRescheduleNotes" class="textarea" maxlength="1000">' + (outcomeState.notes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="outcomeCancelRescheduleBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="outcomeSaveRescheduleBtn" class="new-btn" type="button" style="background:#7c3aed;' + (valid ? '' : 'opacity:.55;cursor:not-allowed;') + '"' + (valid ? '' : ' disabled') + '>Save Reschedule</button>' +
+              '</div>' +
+            '</section>';
+          document.getElementById('outcomeRescheduleDateInput').oninput = (e) => { outcomeState.seenDate = e.target.value; renderOutcomeExpanded(); };
+          document.getElementById('outcomeRescheduleNotes').oninput = (e) => { outcomeState.notes = e.target.value; };
+          document.getElementById('outcomeCancelRescheduleBtn').onclick = () => { outcomeState.section = null; renderOutcomeExpanded(); };
+          document.getElementById('outcomeSaveRescheduleBtn').onclick = () => {
+            if (!valid) return;
+            const dateLabel = new Date(outcomeState.seenDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            ref.appointment = ref.appointment || {};
+            ref.appointment.datetime = dateLabel;
+            if (outcomeState.notes.trim()) {
+              ref.outcomeSummary = {
+                outcome: 'Appointment rescheduled',
+                dateSeen: dateLabel,
+                nextSteps: outcomeState.notes.trim(),
+                codes: '—',
+                docsSent: 'No'
+              };
+            } else {
+              ref.outcomeSummary = null;
+            }
+            updateReferralStatus(ref, 'Rescheduled', 'Outcome logged: Appointment rescheduled', 'Just now');
+            markOutgoingUpdate(ref);
+            detailState.code = ref.code;
+            detailState.contextTab = 'Incoming';
+            renderDetail();
+            showDetail();
+            render();
+          };
+          return;
+        }
+
+        const cancelValid = !!outcomeState.cancelReason && (outcomeState.cancelReason !== 'other' || outcomeState.cancelOther.trim().length > 0);
+        outcomeExpanded.innerHTML =
+          '<section class="card table-wrap">' +
+            '<div class="field">' +
+              '<label>Reason *</label>' +
+              '<select id="outcomeCancelReason" class="select">' +
+                '<option value="">Select</option>' +
+                '<option value="Insurance not accepted">Insurance not accepted</option>' +
+                '<option value="Patient declined visit">Patient declined visit</option>' +
+                '<option value="Unable to see patient">Unable to see patient</option>' +
+                '<option value="other">Other</option>' +
+              '</select>' +
+            '</div>' +
+            '<div id="outcomeCancelOtherWrap"></div>' +
+            '<div class="action-row" style="justify-content:flex-end;">' +
+              '<button id="outcomeCancelCancelBtn" class="ghost-btn" type="button">Cancel</button>' +
+              '<button id="outcomeSaveCancelBtn" class="new-btn" type="button" style="background:#dc2626;' + (cancelValid ? '' : 'opacity:.55;cursor:not-allowed;') + '"' + (cancelValid ? '' : ' disabled') + '>Submit Cancellation</button>' +
+            '</div>' +
+          '</section>';
+        document.getElementById('outcomeCancelReason').value = outcomeState.cancelReason;
+        if (outcomeState.cancelReason === 'other') {
+          document.getElementById('outcomeCancelOtherWrap').innerHTML =
+            '<div class="field" style="margin-top:12px;"><label>Specify reason</label><input id="outcomeCancelOtherInput" class="input" type="text" value="' + (outcomeState.cancelOther || '') + '"></div>';
+          document.getElementById('outcomeCancelOtherInput').oninput = (e) => { outcomeState.cancelOther = e.target.value; renderOutcomeExpanded(); };
+        }
+        document.getElementById('outcomeCancelReason').onchange = (e) => { outcomeState.cancelReason = e.target.value; if (e.target.value !== 'other') outcomeState.cancelOther=''; renderOutcomeExpanded(); };
+        document.getElementById('outcomeCancelCancelBtn').onclick = () => { outcomeState.section = null; renderOutcomeExpanded(); };
+        document.getElementById('outcomeSaveCancelBtn').onclick = () => {
+          if (!cancelValid) return;
+          const reason = outcomeState.cancelReason === 'other' ? outcomeState.cancelOther.trim() : outcomeState.cancelReason;
+          ref.outcomeSummary = null;
+          updateReferralStatus(ref, 'Canceled', 'Outcome logged: Referral canceled (' + reason + ')', 'Just now');
+          markOutgoingUpdate(ref);
+          detailState.code = ref.code;
+          detailState.contextTab = 'Incoming';
+          renderDetail();
+          showDetail();
+          render();
+        };
+      }
+
+      function renderOutcome() {
+        const ref = findReferral(outcomeState.code);
+        if (!ref) return;
+
+        outcomeCodeLine.textContent = 'Referral ID: ' + ref.code;
+        outcomePatientCard.innerHTML =
+          '<h2 class="section-title">Patient</h2>' +
+          '<p class="detail-kv"><span>Name:</span> ' + (ref.patient || '—') + '</p>' +
+          '<p class="detail-kv"><span>DOB:</span> ' + (ref.dob || '—') + '</p>' +
+          '<p class="detail-kv"><span>Phone:</span> ' + (ref.phone || '(202) 555-9821') + '</p>' +
+          '<p class="detail-kv"><span>Email:</span> ' + (ref.email || '—') + '</p>' +
+          '<p class="detail-kv"><span>Insurance:</span> ' + (ref.insurance || '—') + '</p>';
+        outcomeSummaryCard.innerHTML =
+          '<h2 class="section-title">Referral Summary</h2>' +
+          '<p class="detail-kv" style="font-weight:600;">' + (ref.reason || '—') + '</p>' +
+          '<p class="summary-subline" style="margin-top:10px; font-weight:600; color:#4b5563;">Attachments</p>' +
+          (ref.attachments || []).map((a) => '<p class="detail-kv" style="color:#2f64e5;">' + a + '</p>').join('');
+        outcomeProviderCard.innerHTML =
+          '<h2 class="section-title">Referring Provider</h2>' +
+          '<p class="detail-kv"><span>Provider:</span> ' + (ref.referringProvider?.name || '—') + '</p>' +
+          '<p class="detail-kv"><span>Clinic:</span> ' + (ref.referringProvider?.clinic || ref.referringClinic || '—') + '</p>' +
+          '<p class="detail-kv"><span>Referral Date:</span> ' + (ref.referringProvider?.date || ref.date || '—') + '</p>' +
+          '<p class="detail-kv"><span>Contact:</span> ' + (ref.referringProvider?.contact || '—') + '</p>';
+        renderOutcomeExpanded();
+      }
+
+      function specialistNextStepCard(ref) {
+        if (ref.status === 'Pending') {
+          return (
+            '<section class="workflow-card workflow-next">' +
+              '<div class="workflow-next-header">' +
+                '<p class="workflow-kicker">Initial Response</p>' +
+                '<h2 class="workflow-next-title">Review this referral and choose the next step.</h2>' +
+                '<p class="workflow-next-copy">Keep the screen stable. Make the first decision here, then the next stage will slide into place on this same page.</p>' +
+              '</div>' +
+              '<div class="workflow-action-grid">' +
+                '<button id="acceptReferralBtn" class="workflow-action primary" type="button"><span class="workflow-action-title">Accept</span><span class="workflow-action-copy">Take the referral forward into scheduling.</span></button>' +
+                '<button id="declineReferralBtn" class="workflow-action danger" type="button"><span class="workflow-action-title">Decline</span><span class="workflow-action-copy">Close the referral and notify the referring team.</span></button>' +
+              '</div>' +
+            '</section>'
+          );
+        }
+
+        const schedulingStatuses = ['Accepted'];
+        const postAppointmentStatuses = ['Scheduled', 'Rescheduled'];
+
+        if (schedulingStatuses.includes(ref.status)) {
+          return (
+            '<section class="workflow-card workflow-next">' +
+              '<div class="workflow-next-header">' +
+                '<p class="workflow-kicker">Scheduling</p>' +
+                '<h2 class="workflow-next-title">What’s the scheduling outcome?</h2>' +
+                '<p class="workflow-next-copy">Use one clear scheduling update. If the patient is booked, capture the appointment details in a lightweight modal.</p>' +
+              '</div>' +
+              '<div class="workflow-action-grid">' +
+                '<div class="workflow-action-row">' +
+                  '<button id="scheduleStageBtn" class="workflow-action primary" type="button"><span class="workflow-action-title">Scheduled</span><span class="workflow-action-copy">Add the appointment date.</span></button>' +
+                  '<button id="cancelSchedulingStageBtn" class="workflow-action danger" type="button"><span class="workflow-action-title">Cancel</span><span class="workflow-action-copy">Close the referral with a cancellation reason.</span></button>' +
+                '</div>' +
+              '</div>' +
+              '<p class="workflow-note">Choose the clean next step after acceptance. Cancellation details live in the activity timeline.</p>' +
+            '</section>'
+          );
+        }
+
+        if (postAppointmentStatuses.includes(ref.status)) {
+          return (
+            '<section class="workflow-card workflow-next">' +
+              '<div class="workflow-next-header">' +
+                '<p class="workflow-kicker">Post-Appointment</p>' +
+                '<h2 class="workflow-next-title">Update the appointment outcome.</h2>' +
+                '<p class="workflow-next-copy">Capture the result once the visit path is known without leaving this workflow.</p>' +
+              '</div>' +
+              '<div class="workflow-action-grid">' +
+                '<div class="workflow-action-row equal-4">' +
+                  '<button id="logOutcomeBtnRuntime" class="workflow-action primary" type="button"><span class="workflow-action-title">Completed</span><span class="workflow-action-copy">Open the completion form.</span></button>' +
+                  '<button id="markNoShowBtn" class="workflow-action warn" type="button"><span class="workflow-action-title">No Show</span><span class="workflow-action-copy">Record that the patient did not attend.</span></button>' +
+                  '<button id="markRescheduledBtn" class="workflow-action soft" type="button"><span class="workflow-action-title">Rescheduled</span><span class="workflow-action-copy">Capture the new appointment details.</span></button>' +
+                  '<button id="markCanceledBtn" class="workflow-action danger" type="button"><span class="workflow-action-title">Cancel Referral</span><span class="workflow-action-copy">Close the referral with a reason.</span></button>' +
+                '</div>' +
+                workflowOutcomeExpanded(ref) +
+              '</div>' +
+            '</section>'
+          );
+        }
+
+        if (['Completed', 'No-show', 'Canceled'].includes(ref.status)) {
+          return '';
+        }
+
+        return (
+          '<section class="workflow-card workflow-next">' +
+            '<div class="workflow-next-header">' +
+              '<p class="workflow-kicker">Status</p>' +
+              '<h2 class="workflow-next-title">' + ref.status + '</h2>' +
+              '<p class="workflow-next-copy">There is no further action required from the specialist on this referral right now.</p>' +
+            '</div>' +
+          '</section>'
+        );
+      }
+
+      function workflowOutcomeExpanded(ref) {
+        if (outcomeState.code !== ref.code || !outcomeState.section) return '';
+
+        if (outcomeState.section === 'completed') {
+          const valid = !!outcomeState.outcome &&
+            (outcomeState.outcome !== 'other' || outcomeState.outcomeOther.trim().length > 0);
+          return (
+            '<section class="card table-wrap" style="margin-top:6px;">' +
+              '<div class="form-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">' +
+                '<div class="field">' +
+                  '<label>Outcome *</label>' +
+                  '<select id="workflowOutcomeCompletedSelect" class="select">' +
+                    '<option value="">Select</option>' +
+                    '<option value="Evaluation completed">Evaluation completed</option>' +
+                    '<option value="Evaluation + procedure completed">Evaluation + procedure completed</option>' +
+                    '<option value="Follow-up visit scheduled">Follow-up visit scheduled</option>' +
+                    '<option value="Patient requires additional testing">Patient requires additional testing</option>' +
+                    '<option value="Patient requires specialist referral">Patient requires specialist referral</option>' +
+                    '<option value="other">Other</option>' +
+                  '</select>' +
+                '</div>' +
+                '<div class="field">' +
+                  '<label>Next step</label>' +
+                  '<select id="workflowOutcomeNextSelect" class="select">' +
+                    '<option value="">Select</option>' +
+                    '<option value="Return to referring provider">Return to referring provider</option>' +
+                    '<option value="Schedule follow-up visit">Schedule follow-up visit</option>' +
+                    '<option value="Pending diagnostic results">Pending diagnostic results</option>' +
+                    '<option value="No further action required">No further action required</option>' +
+                    '<option value="other">Other</option>' +
+                  '</select>' +
+                '</div>' +
+                '<div class="field">' +
+                  '<label>ICD-10/CPT</label>' +
+                  '<input id="workflowOutcomeCodesInput" class="input" type="text" placeholder="Optional: R92.8, 77067" value="' + (outcomeState.codes || '') + '">' +
+                '</div>' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Visit notes (max 1000)</label>' +
+                '<textarea id="workflowOutcomeNotesInput" class="textarea" maxlength="1000">' + (outcomeState.notes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Upload documentation (optional)</label>' +
+                '<input id="workflowOutcomeDocsInput" class="file-input" type="file" multiple>' +
+                (outcomeState.uploadedDocs.length
+                  ? '<p class="summary-subline" style="margin-top:6px;">Selected: ' + outcomeState.uploadedDocs.join(', ') + '</p>'
+                  : '') +
+              '</div>' +
+              '<div id="workflowOutcomeExtraInputs"></div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="workflowOutcomeCancelBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="workflowOutcomeSaveCompleteBtn" class="new-btn" type="button"' + (valid ? '' : ' disabled style="opacity:.55;cursor:not-allowed;"') + '>Log Completion</button>' +
+              '</div>' +
+            '</section>'
+          );
+        }
+
+        if (outcomeState.section === 'noshow') {
+          return (
+            '<section class="card table-wrap" style="margin-top:6px;">' +
+              '<div class="field">' +
+                '<label>Visit notes (optional)</label>' +
+                '<textarea id="workflowOutcomeNoShowNotes" class="textarea" maxlength="1000">' + (outcomeState.noShowNotes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="workflowOutcomeCancelNoShowBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="workflowOutcomeSaveNoShowBtn" class="new-btn" type="button" style="background:#f97316;">Log No-Show</button>' +
+              '</div>' +
+            '</section>'
+          );
+        }
+
+        if (outcomeState.section === 'reschedule') {
+          const valid = !!outcomeState.seenDate;
+          return (
+            '<section class="card table-wrap" style="margin-top:6px;">' +
+              '<div class="field">' +
+                '<label>New appointment date *</label>' +
+                '<input id="workflowOutcomeRescheduleDateInput" class="input" type="date" value="' + (outcomeState.seenDate || '') + '">' +
+              '</div>' +
+              '<div class="field" style="margin-top:12px;">' +
+                '<label>Visit notes (optional)</label>' +
+                '<textarea id="workflowOutcomeRescheduleNotes" class="textarea" maxlength="1000">' + (outcomeState.notes || '') + '</textarea>' +
+              '</div>' +
+              '<div class="action-row" style="justify-content:flex-end;">' +
+                '<button id="workflowOutcomeCancelRescheduleBtn" class="ghost-btn" type="button">Cancel</button>' +
+                '<button id="workflowOutcomeSaveRescheduleBtn" class="new-btn" type="button" style="background:#7c3aed;' + (valid ? '' : 'opacity:.55;cursor:not-allowed;') + '"' + (valid ? '' : ' disabled') + '>Save Reschedule</button>' +
+              '</div>' +
+            '</section>'
+          );
+        }
+
+        const cancelValid = !!outcomeState.cancelReason && (outcomeState.cancelReason !== 'other' || outcomeState.cancelOther.trim().length > 0);
+        return (
+          '<section class="card table-wrap" style="margin-top:6px;">' +
+            '<div class="field">' +
+              '<label>Reason *</label>' +
+              '<select id="workflowOutcomeCancelReason" class="select">' +
+                '<option value="">Select</option>' +
+                '<option value="Insurance not accepted">Insurance not accepted</option>' +
+                '<option value="Patient declined visit">Patient declined visit</option>' +
+                '<option value="Unable to see patient">Unable to see patient</option>' +
+                '<option value="other">Other</option>' +
+              '</select>' +
+            '</div>' +
+            '<div id="workflowOutcomeCancelOtherWrap"></div>' +
+            '<div class="action-row" style="justify-content:flex-end;">' +
+              '<button id="workflowOutcomeCancelCancelBtn" class="ghost-btn" type="button">Cancel</button>' +
+              '<button id="workflowOutcomeSaveCancelBtn" class="new-btn" type="button" style="background:#dc2626;' + (cancelValid ? '' : 'opacity:.55;cursor:not-allowed;') + '"' + (cancelValid ? '' : ' disabled') + '>Submit Cancellation</button>' +
+            '</div>' +
+          '</section>'
+        );
+      }
+
+      function workflowLoggedOutcomeCard(ref) {
+        const outcome = ref.outcomeSummary;
+        if (!outcome) return '';
+
+        const docsHtml = (ref.outcomeDocuments && ref.outcomeDocuments.length)
+          ? ref.outcomeDocuments.map((doc) => '<a class="workflow-link" href="#">' + doc + '</a>').join('')
+          : '<p class="workflow-copy workflow-empty">No outcome documents attached.</p>';
+
+        return (
+          '<section class="workflow-card workflow-summary-section">' +
+            '<h2 class="workflow-panel-title">Outcome Summary</h2>' +
+            '<div class="workflow-summary-grid">' +
+              '<section class="workflow-summary-section">' +
+                '<p class="workflow-copy"><strong>Outcome:</strong> ' + (outcome.outcome || '—') + '</p>' +
+                '<p class="workflow-copy"><strong>Date:</strong> ' + (outcome.dateSeen || '—') + '</p>' +
+              '</section>' +
+              '<section class="workflow-summary-section">' +
+                '<p class="workflow-copy"><strong>Next Step:</strong> ' + (outcome.nextSteps || '—') + '</p>' +
+                '<p class="workflow-copy"><strong>ICD-10/CPT:</strong> ' + (outcome.codes || '—') + '</p>' +
+              '</section>' +
+            '</div>' +
+            '<div class="workflow-divider" style="margin:2px 0 0;"></div>' +
+            '<section class="workflow-summary-section">' +
+              '<h3 class="workflow-panel-title" style="margin-bottom:6px;">Documents</h3>' +
+              '<div class="workflow-attachments">' + docsHtml + '</div>' +
+            '</section>' +
+          '</section>'
+        );
+      }
+
+      function outgoingOutcomeCard(ref) {
+        const outcome = ref.outcomeSummary;
+        if (!outcome) {
+          return (
+            '<section class="workflow-card workflow-summary-section outcome-tint">' +
+              '<h2 class="outcome-header" style="margin:0 0 10px;">&#9679; Pending Outcome</h2>' +
+              '<p class="workflow-note">Outcome updates appear here once the specialist logs the visit result.</p>' +
+            '</section>'
+          );
+        }
+
+        const docsHtml = (ref.outcomeDocuments && ref.outcomeDocuments.length)
+          ? ref.outcomeDocuments.map((doc) => '<a class="workflow-link" href="#">' + doc + '</a>').join('')
+          : '<p class="workflow-copy workflow-empty">No outcome documents attached.</p>';
+
+        return (
+          '<section class="workflow-card workflow-summary-section outcome-tint">' +
+            '<h2 class="outcome-header" style="margin:0 0 10px;">&#9679; Outcome Summary</h2>' +
+            '<div class="workflow-summary-grid">' +
+              '<section class="workflow-summary-section">' +
+                '<p class="workflow-copy"><strong>Outcome:</strong> ' + (outcome.outcome || '—') + '</p>' +
+                '<p class="workflow-copy"><strong>Date:</strong> ' + (outcome.dateSeen || '—') + '</p>' +
+              '</section>' +
+              '<section class="workflow-summary-section">' +
+                '<p class="workflow-copy"><strong>Next Step:</strong> ' + (outcome.nextSteps || '—') + '</p>' +
+                '<p class="workflow-copy"><strong>ICD-10/CPT:</strong> ' + (outcome.codes || '—') + '</p>' +
+              '</section>' +
+            '</div>' +
+            '<div class="workflow-divider" style="margin:2px 0 0;"></div>' +
+            '<section class="workflow-summary-section">' +
+              '<h3 class="workflow-panel-title" style="margin-bottom:6px;">Documents</h3>' +
+              '<div class="workflow-attachments">' + docsHtml + '</div>' +
+            '</section>' +
+          '</section>'
+        );
+      }
+
+      function workflowStageIndex(status) {
+        if (status === 'Pending') return 0;
+        if (status === 'Declined') return 0;
+        if (status === 'Accepted') return 1;
+        if (status === 'Scheduled' || status === 'Rescheduled') return 2;
+        return 2;
+      }
+
+      function renderDetail() {
+        const ref = findReferral(detailState.code);
+        if (!ref) return;
+        const specialistContext = detailState.contextTab === 'Incoming';
+        const outgoingContext = detailState.contextTab === 'Outgoing';
+        const pendingSpecialist = false;
+        const specialistWorkflow = specialistContext || outgoingContext;
+
+        standardDetailContent.classList.toggle('hidden', pendingSpecialist || specialistWorkflow);
+        specialistWorkflowView.classList.toggle('hidden', !specialistWorkflow);
+        pendingSpecialistView.classList.add('hidden');
+
+        if (specialistWorkflow) {
+          const stageIndex = workflowStageIndex(ref.status);
+          specialistWorkflowView.classList.toggle('drawer-open', outgoingContext || !!detailState.activityOpen);
+          const timelineHtml = getTimelineDisplay(ref, detailState.contextTab)
+            .map((t) => {
+              const event = t.event;
+              const date = t.date || ref.date;
+              return '<li class="timeline-item"><p class="timeline-event">' + event + '</p><p class="timeline-date">' + date + '</p></li>';
+            })
+            .join('');
+          const attachmentHtml = (ref.attachments || [])
+            .map((a) => '<a class="workflow-link" href="#">' + a + '</a>')
+            .join('');
+          const receivingSpecialist = ref.specialist || ref.specialistName || 'Assigned specialist';
+          const summaryHtml =
+            '<section class="workflow-card workflow-summary">' +
+              '<div class="workflow-summary-head">' +
+                '<h2 class="workflow-summary-title">Referral Summary</h2>' +
+                '<div class="workflow-meta-row">' +
+                  '<div class="workflow-meta-item">' +
+                    '<p class="workflow-meta-label">Referral ID</p>' +
+                    '<p class="workflow-meta-value">' + ref.code + '</p>' +
+                  '</div>' +
+                  '<div class="workflow-meta-item">' +
+                    '<p class="workflow-meta-label">Visit Type</p>' +
+                    '<p class="workflow-meta-value">' + (ref.visitType || 'Consultation') + '</p>' +
+                  '</div>' +
+                  '<div class="workflow-meta-item">' +
+                    '<p class="workflow-meta-label">Referral Date</p>' +
+                    '<p class="workflow-meta-value">' + (ref.referringProvider?.date || ref.date || '—') + '</p>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="workflow-divider"></div>' +
+              '<div class="workflow-actor-row">' +
+                '<section class="workflow-actor">' +
+                  '<h2 class="workflow-panel-title">Patient</h2>' +
+                  '<p class="workflow-copy"><strong>Name:</strong> ' + (ref.patient || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>DOB:</strong> ' + (ref.dob || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>Insurance:</strong> ' + (ref.insurance || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>Phone:</strong> ' + (ref.phone || '(202) 555-9821') + '</p>' +
+                '</section>' +
+                '<section class="workflow-actor">' +
+                  '<h2 class="workflow-panel-title">Referring Provider</h2>' +
+                  '<p class="workflow-copy"><strong>Provider:</strong> ' + (ref.referringProvider?.name || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>Clinic:</strong> ' + (ref.referringProvider?.clinic || ref.referringClinic || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>Contact:</strong> ' + (ref.referringProvider?.contact || '—') + '</p>' +
+                '</section>' +
+                '<section class="workflow-actor">' +
+                  '<h2 class="workflow-panel-title">Receiving Specialist / Specialty</h2>' +
+                  '<p class="workflow-copy"><strong>Specialist:</strong> ' + receivingSpecialist + '</p>' +
+                  '<p class="workflow-copy"><strong>Specialty:</strong> ' + (ref.specialty || '—') + '</p>' +
+                  '<p class="workflow-copy"><strong>Clinic:</strong> ' + (ref.specialistClinic || '—') + '</p>' +
+                '</section>' +
+              '</div>' +
+              '<div class="workflow-divider"></div>' +
+              '<div class="workflow-summary-grid">' +
+                '<section class="workflow-summary-section">' +
+                  '<h2 class="workflow-panel-title">Referral Reason</h2>' +
+                  '<p class="workflow-reason' + ((ref.reason || '').trim() ? '' : ' workflow-empty') + '">' + (((ref.reason || '').trim()) || 'No referral reason added.') + '</p>' +
+                '</section>' +
+              '</div>' +
+              '<div class="workflow-divider"></div>' +
+              '<section class="workflow-summary-section">' +
+                '<h2 class="workflow-panel-title">Attachments</h2>' +
+                '<div class="workflow-attachments">' + (attachmentHtml || '<p class="workflow-copy workflow-empty">No attachments included.</p>') + '</div>' +
+              '</section>' +
+            '</section>';
+
+          if (specialistContext) {
+            const progressSteps = [
+              { label: 'Step 1', title: 'Initial Response' },
+              { label: 'Step 2', title: 'Scheduling' },
+              { label: 'Step 3', title: 'Outcome' }
+            ].map((step, idx) => {
+              const stateClass = idx < stageIndex ? ' done' : (idx === stageIndex ? ' active' : '');
+              return '<div class="workflow-step' + stateClass + '"><p class="workflow-step-label">' + step.label + '</p><p class="workflow-step-title">' + step.title + '</p></div>';
+            }).join('');
+
+            specialistWorkflowView.innerHTML =
+              '<div class="workflow-hero">' +
+                '<div>' +
+                  '<p class="workflow-overline">Specialist Review</p>' +
+                  '<h1 class="workflow-title">Referral Review</h1>' +
+                  '<p class="workflow-subline">Review the referral details, then move the patient to the appropriate next step.</p>' +
+                '</div>' +
+                '<div class="workflow-hero-actions">' +
+                  '<span class="status-chip ' + statusClass(ref.status) + '">' + ref.status + '</span>' +
+                  '<button id="workflowActivityToggleBtn" class="workflow-toggle" type="button">' + (detailState.activityOpen ? 'Hide Activity' : 'Show Activity') + '</button>' +
+                  '<button id="specialistWorkflowBackBtn" class="ghost-btn" type="button">Back to Dashboard</button>' +
+                '</div>' +
+              '</div>' +
+              '<section class="workflow-progress">' + progressSteps + '</section>' +
+              '<div class="workflow-frame">' +
+                '<div class="workflow-main">' +
+                  summaryHtml +
+                  '<div>' + specialistNextStepCard(ref) + '</div>' +
+                  workflowLoggedOutcomeCard(ref) +
+                '</div>' +
+                '<aside class="workflow-drawer">' +
+                  '<section class="workflow-timeline">' +
+                    '<div class="workflow-drawer-head">' +
+                      '<h2 class="workflow-drawer-title">Activity</h2>' +
+                    '</div>' +
+                    '<ul class="timeline-list">' + timelineHtml + '</ul>' +
+                  '</section>' +
+                '</aside>' +
+              '</div>';
+          } else {
+            specialistWorkflowView.innerHTML =
+              '<div class="workflow-hero">' +
+                '<div>' +
+                  '<p class="workflow-overline">Referring Provider View</p>' +
+                  '<h1 class="workflow-title">Referral Review</h1>' +
+                  '<p class="workflow-subline">Track specialist updates and review the referral outcome from one place.</p>' +
+                '</div>' +
+                '<div class="workflow-hero-actions">' +
+                  '<span class="status-chip ' + statusClass(ref.status) + '">' + ref.status + '</span>' +
+                  '<button id="specialistWorkflowBackBtn" class="ghost-btn" type="button">Back to Dashboard</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="workflow-frame">' +
+                '<div class="workflow-main">' +
+                  summaryHtml +
+                  outgoingOutcomeCard(ref) +
+                '</div>' +
+                '<aside class="workflow-drawer">' +
+                  '<section class="workflow-timeline">' +
+                    '<div class="workflow-drawer-head">' +
+                      '<h2 class="workflow-drawer-title">Activity</h2>' +
+                    '</div>' +
+                    '<ul class="timeline-list">' + timelineHtml + '</ul>' +
+                  '</section>' +
+                '</aside>' +
+              '</div>';
+          }
+
+          const activityToggleBtn = document.getElementById('workflowActivityToggleBtn');
+          if (activityToggleBtn) {
+            activityToggleBtn.onclick = () => {
+              detailState.activityOpen = !detailState.activityOpen;
+              renderDetail();
+            };
+          }
+          document.getElementById('specialistWorkflowBackBtn').onclick = showDashboard;
+
+          if (specialistContext && ref.status === 'Pending') {
+            document.getElementById('acceptReferralBtn').onclick = () => {
+              updateReferralStatus(ref, 'Accepted', 'Referral accepted', 'Just now', { markOutgoingUnread: true });
+              renderDetail();
+              render();
+            };
+            document.getElementById('declineReferralBtn').onclick = () => openCancelModal('decline');
+          }
+
+          const schedulingStatuses = ['Accepted'];
+          const postAppointmentStatuses = ['Scheduled', 'Rescheduled'];
+          if (specialistContext && schedulingStatuses.includes(ref.status)) {
+            document.getElementById('scheduleStageBtn').onclick = () => openScheduleModal(ref.code, 'scheduled');
+            document.getElementById('cancelSchedulingStageBtn').onclick = () => openCancelModal('cancel');
+          } else if (specialistContext && postAppointmentStatuses.includes(ref.status)) {
+            document.getElementById('logOutcomeBtnRuntime').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeState.code = ref.code;
+              outcomeState.section = 'completed';
+              outcomeToast.classList.add('hidden');
+              renderDetail();
+            };
+            document.getElementById('markNoShowBtn').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeState.code = ref.code;
+              outcomeState.section = 'noshow';
+              outcomeToast.classList.add('hidden');
+              renderDetail();
+            };
+            document.getElementById('markRescheduledBtn').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeState.code = ref.code;
+              outcomeState.section = 'reschedule';
+              outcomeToast.classList.add('hidden');
+              renderDetail();
+            };
+            document.getElementById('markCanceledBtn').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeState.code = ref.code;
+              outcomeState.section = 'cancel';
+              outcomeToast.classList.add('hidden');
+              renderDetail();
+            };
+
+            if (outcomeState.code === ref.code && outcomeState.section === 'completed') {
+              document.getElementById('workflowOutcomeCompletedSelect').value = outcomeState.outcome;
+              document.getElementById('workflowOutcomeNextSelect').value = outcomeState.next;
+
+              const extras = document.getElementById('workflowOutcomeExtraInputs');
+              let extraHtml = '';
+              if (outcomeState.outcome === 'other') {
+                extraHtml += '<div class="field" style="margin-top:12px;"><label>Other outcome</label><input id="workflowOutcomeOtherInput" class="input" type="text" value="' + (outcomeState.outcomeOther || '') + '"></div>';
+              }
+              if (outcomeState.next === 'other') {
+                extraHtml += '<div class="field" style="margin-top:12px;"><label>Other next step</label><input id="workflowOutcomeNextOtherInput" class="input" type="text" value="' + (outcomeState.nextOther || '') + '"></div>';
+              }
+              extras.innerHTML = extraHtml;
+
+              document.getElementById('workflowOutcomeCompletedSelect').onchange = (e) => { outcomeState.outcome = e.target.value; renderDetail(); };
+              document.getElementById('workflowOutcomeNextSelect').onchange = (e) => { outcomeState.next = e.target.value; renderDetail(); };
+              document.getElementById('workflowOutcomeCodesInput').oninput = (e) => { outcomeState.codes = e.target.value; };
+              document.getElementById('workflowOutcomeNotesInput').oninput = (e) => { outcomeState.notes = e.target.value; };
+              document.getElementById('workflowOutcomeDocsInput').onchange = (e) => {
+                outcomeState.uploadedDocs = Array.from(e.target.files || []).map((f) => f.name);
+                renderDetail();
+              };
+              const otherInput = document.getElementById('workflowOutcomeOtherInput');
+              if (otherInput) otherInput.oninput = (e) => { outcomeState.outcomeOther = e.target.value; renderDetail(); };
+              const nextOtherInput = document.getElementById('workflowOutcomeNextOtherInput');
+              if (nextOtherInput) nextOtherInput.oninput = (e) => { outcomeState.nextOther = e.target.value; };
+              document.getElementById('workflowOutcomeCancelBtn').onclick = () => { outcomeState.section = null; renderDetail(); };
+              document.getElementById('workflowOutcomeSaveCompleteBtn').onclick = () => {
+                const valid = !!outcomeState.outcome &&
+                  (outcomeState.outcome !== 'other' || outcomeState.outcomeOther.trim().length > 0);
+                if (!valid) return;
+                const outcomeLabel = outcomeState.outcome === 'other' ? outcomeState.outcomeOther.trim() : outcomeState.outcome;
+                const nextLabel = outcomeState.next === 'other' ? outcomeState.nextOther.trim() : outcomeState.next;
+                const outcomeDate = ref.appointment?.datetime ? String(ref.appointment.datetime).split(' • ')[0] : (ref.date || '—');
+                ref.outcomeSummary = {
+                  outcome: outcomeLabel || 'Evaluation completed',
+                  dateSeen: outcomeDate,
+                  nextSteps: nextLabel || 'Return to referring provider',
+                  codes: outcomeState.codes || '—',
+                  docsSent: 'Yes'
+                };
+                if (!Array.isArray(ref.outcomeDocuments) || !ref.outcomeDocuments.length) {
+                  ref.outcomeDocuments = assetsForSpecialty(ref.specialty).outcomeDocs;
+                }
+                if (outcomeState.uploadedDocs.length) {
+                  const existing = Array.isArray(ref.outcomeDocuments) ? ref.outcomeDocuments : [];
+                  const merged = [...existing, ...outcomeState.uploadedDocs];
+                  ref.outcomeDocuments = Array.from(new Set(merged));
+                }
+                updateReferralStatus(ref, 'Completed', 'Outcome logged: Completed visit', 'Just now');
+                markOutgoingUpdate(ref);
+                outcomeState.section = null;
+                renderOutcomeSentConfirmation();
+                showOutcomeSent();
+                render();
+              };
+            } else if (outcomeState.code === ref.code && outcomeState.section === 'noshow') {
+              document.getElementById('workflowOutcomeNoShowNotes').oninput = (e) => { outcomeState.noShowNotes = e.target.value; };
+              document.getElementById('workflowOutcomeCancelNoShowBtn').onclick = () => { outcomeState.section = null; renderDetail(); };
+              document.getElementById('workflowOutcomeSaveNoShowBtn').onclick = () => {
+                const outcomeDate = ref.appointment?.datetime ? String(ref.appointment.datetime).split(' • ')[0] : (ref.date || '—');
+                ref.outcomeSummary = {
+                  outcome: 'No-show',
+                  dateSeen: outcomeDate,
+                  nextSteps: outcomeState.noShowNotes.trim() || 'Patient did not attend scheduled visit',
+                  codes: '—',
+                  docsSent: 'No'
+                };
+                updateReferralStatus(ref, 'No-show', 'Outcome logged: Patient no-show', 'Just now');
+                markOutgoingUpdate(ref);
+                outcomeState.section = null;
+                renderOutcomeSentConfirmation();
+                showOutcomeSent();
+                render();
+              };
+            } else if (outcomeState.code === ref.code && outcomeState.section === 'reschedule') {
+              document.getElementById('workflowOutcomeRescheduleDateInput').oninput = (e) => { outcomeState.seenDate = e.target.value; renderDetail(); };
+              document.getElementById('workflowOutcomeRescheduleNotes').oninput = (e) => { outcomeState.notes = e.target.value; };
+              document.getElementById('workflowOutcomeCancelRescheduleBtn').onclick = () => { outcomeState.section = null; renderDetail(); };
+              document.getElementById('workflowOutcomeSaveRescheduleBtn').onclick = () => {
+                if (!outcomeState.seenDate) return;
+                const dateLabel = new Date(outcomeState.seenDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                ref.appointment = ref.appointment || {};
+                ref.appointment.datetime = dateLabel;
+                ref.appointment.location = ref.specialistClinic || ref.appointment.location || '—';
+                ref.appointment.attending = ref.appointment.attending || 'Assigned specialist';
+                ref.outcomeSummary = {
+                  outcome: 'Appointment rescheduled',
+                  dateSeen: dateLabel,
+                  nextSteps: outcomeState.notes.trim() || 'Awaiting rescheduled appointment',
+                  codes: '—',
+                  docsSent: 'No'
+                };
+                updateReferralStatus(ref, 'Rescheduled', 'Outcome logged: Appointment rescheduled', 'Just now');
+                markOutgoingUpdate(ref);
+                outcomeState.section = null;
+                renderOutcomeSentConfirmation();
+                showOutcomeSent();
+                render();
+              };
+            } else if (outcomeState.code === ref.code && outcomeState.section === 'cancel') {
+              document.getElementById('workflowOutcomeCancelReason').value = outcomeState.cancelReason;
+              if (outcomeState.cancelReason === 'other') {
+                document.getElementById('workflowOutcomeCancelOtherWrap').innerHTML =
+                  '<div class="field" style="margin-top:12px;"><label>Specify reason</label><input id="workflowOutcomeCancelOtherInput" class="input" type="text" value="' + (outcomeState.cancelOther || '') + '"></div>';
+                document.getElementById('workflowOutcomeCancelOtherInput').oninput = (e) => { outcomeState.cancelOther = e.target.value; renderDetail(); };
+              }
+              document.getElementById('workflowOutcomeCancelReason').onchange = (e) => { outcomeState.cancelReason = e.target.value; if (e.target.value !== 'other') outcomeState.cancelOther = ''; renderDetail(); };
+              document.getElementById('workflowOutcomeCancelCancelBtn').onclick = () => { outcomeState.section = null; renderDetail(); };
+              document.getElementById('workflowOutcomeSaveCancelBtn').onclick = () => {
+                const valid = !!outcomeState.cancelReason && (outcomeState.cancelReason !== 'other' || outcomeState.cancelOther.trim().length > 0);
+                if (!valid) return;
+                const reason = outcomeState.cancelReason === 'other' ? outcomeState.cancelOther.trim() : outcomeState.cancelReason;
+                const outcomeDate = ref.appointment?.datetime ? String(ref.appointment.datetime).split(' • ')[0] : (ref.date || '—');
+                ref.outcomeSummary = {
+                  outcome: 'Referral canceled',
+                  dateSeen: outcomeDate,
+                  nextSteps: reason,
+                  codes: '—',
+                  docsSent: 'No'
+                };
+                updateReferralStatus(ref, 'Canceled', 'Outcome logged: Referral canceled (' + reason + ')', 'Just now');
+                markOutgoingUpdate(ref);
+                outcomeState.section = null;
+                renderOutcomeSentConfirmation();
+                showOutcomeSent();
+                render();
+              };
+            }
+          }
+          return;
+        }
+
+        detailHeading.textContent = 'Referral Detail — ' + ref.code;
+        const statusClassName = statusClass(ref.status);
+        detailStatusChip.className = 'status-chip ' + statusClassName;
+        detailStatusChip.textContent = ref.status;
+        document.querySelector('.detail-top-grid').classList.toggle('specialist-focus', specialistContext);
+
+        detailPatientCard.innerHTML =
+          '<h2 class="section-title">Patient Information</h2>' +
+          '<p class="detail-kv"><span>Name:</span> ' + ref.patient + '</p>' +
+          '<p class="detail-kv"><span>DOB:</span> ' + (ref.dob || '—') + '</p>' +
+          '<p class="detail-kv"><span>Insurance:</span> ' + (ref.insurance || '—') + '</p>';
+
+        detailSummaryCard.innerHTML =
+          '<h2 class="section-title">Referral Summary</h2>' +
+          '<p class="detail-kv" style="font-weight:600;">' + (ref.reason || '—') + '</p>' +
+          '<p class="summary-subline" style="margin-top:10px; font-weight:600; color:#4b5563;">Attachments</p>' +
+          (ref.attachments || []).map((a) => '<p class="detail-kv" style="color:#2f64e5;">' + a + '</p>').join('');
+
+        detailProviderCard.innerHTML =
+          '<h2 class="section-title">Referring Provider</h2>' +
+          '<p class="detail-kv"><span>Provider:</span> ' + (ref.referringProvider?.name || '—') + '</p>' +
+          '<p class="detail-kv"><span>Clinic:</span> ' + (ref.referringProvider?.clinic || ref.referringClinic) + '</p>' +
+          '<p class="detail-kv"><span>Referral Date:</span> ' + (ref.referringProvider?.date || ref.date) + '</p>' +
+          '<p class="detail-kv"><span>Contact:</span> ' + (ref.referringProvider?.contact || '—') + '</p>';
+
+        const outcome = ref.outcomeSummary;
+        const showOutcomeSummary = !specialistContext && !!outcome;
+        detailOutcomeWrap.classList.toggle('hidden', !showOutcomeSummary);
+        detailMiddleWrap.classList.toggle('timeline-only', !showOutcomeSummary);
+        if (outcome) {
+          detailOutcomeCard.innerHTML =
+            '<p class="outcome-header">&#9679; Outcome Summary</p>' +
+            '<p class="detail-kv"><span>Outcome:</span> ' + (outcome.outcome || '—') + '</p>' +
+            '<p class="detail-kv"><span>Date Seen:</span> ' + (outcome.dateSeen || '—') + '</p>' +
+            '<p class="detail-kv"><span>Next Steps:</span> ' + (outcome.nextSteps || '—') + '</p>' +
+            '<p class="detail-kv"><span>ICD-10 / CPT:</span> ' + (outcome.codes || '—') + '</p>' +
+            '<p class="detail-kv"><span>Documentation Sent:</span> ' + (outcome.docsSent || 'Yes') + '</p>' +
+            ((ref.outcomeDocuments && ref.outcomeDocuments.length)
+              ? '<p class="outcome-doc-title">Outcome Documents</p>' +
+                ref.outcomeDocuments.map((d) => '<p class="outcome-doc-link">&#128196; ' + d + '</p>').join('')
+              : '');
+        } else {
+          detailOutcomeCard.innerHTML =
+            '<p class="outcome-header">&#9679; Outcome Summary</p>' +
+            '<p class="summary-subline" style="margin-top:0;">No outcome logged yet.</p>';
+        }
+
+        detailTimeline.innerHTML = getTimelineDisplay(ref, detailState.contextTab)
+          .map((t) => {
+            const event = t.event;
+            const date = t.date || ref.date;
+            return '<li class="timeline-item"><p class="timeline-event">' + event + '</p><p class="timeline-date">' + date + '</p></li>';
+          })
+          .join('');
+
+        if (specialistContext) {
+          const schedulingStatuses = ['Accepted'];
+          const postAppointmentStatuses = ['Scheduled', 'Rescheduled'];
+          if (schedulingStatuses.includes(ref.status)) {
+            specialistActions.innerHTML =
+              '<div class="stage-actions">' +
+                '<section class="stage-card">' +
+                  '<div class="stage-header">' +
+                    '<div>' +
+                      '<p class="stage-eyebrow">Next Step</p>' +
+                      '<p class="stage-label">Move This Referral Into Scheduling</p>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="stage-buttons">' +
+                    '<button id="scheduleStageBtn" class="new-btn stage-btn" type="button">Scheduled</button>' +
+                    '<button id="cancelSchedulingStageBtn" class="new-btn stage-btn danger" type="button">Cancel</button>' +
+                  '</div>' +
+                  '<p class="stage-hint">Choose the clean next step after acceptance. Cancellation details live in the activity timeline.</p>' +
+                '</section>' +
+              '</div>';
+            specialistActions.classList.remove('hidden');
+            document.getElementById('scheduleStageBtn').onclick = () => openScheduleModal(ref.code, 'scheduled');
+            document.getElementById('cancelSchedulingStageBtn').onclick = () => openCancelModal('cancel');
+          } else if (postAppointmentStatuses.includes(ref.status)) {
+            specialistActions.innerHTML =
+              '<div class="stage-actions">' +
+                '<section class="stage-card">' +
+                  '<div class="stage-header">' +
+                    '<div>' +
+                      '<p class="stage-eyebrow">Next Step</p>' +
+                      '<p class="stage-label">Record What Happened After Scheduling</p>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="stage-buttons">' +
+                    '<button id="logOutcomeBtnRuntime" class="new-btn stage-btn" type="button">Completed</button>' +
+                    '<button id="markNoShowBtn" class="new-btn stage-btn warning" type="button">No Show</button>' +
+                    '<button id="markRescheduledBtn" class="new-btn stage-btn purple" type="button">Rescheduled</button>' +
+                    '<button id="markCanceledBtn" class="new-btn stage-btn danger" type="button">Cancelled</button>' +
+                  '</div>' +
+                  '<p class="stage-hint">Use the primary action when the visit is complete. Only use the other options when the appointment did not follow the expected path.</p>' +
+                '</section>' +
+              '</div>';
+            specialistActions.classList.remove('hidden');
+            document.getElementById('logOutcomeBtnRuntime').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeToast.classList.add('hidden');
+              renderOutcome();
+              showOutcome();
+            };
+            document.getElementById('markNoShowBtn').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeToast.classList.add('hidden');
+              outcomeState.section = 'noshow';
+              renderOutcome();
+              showOutcome();
+            };
+            document.getElementById('markRescheduledBtn').onclick = () => openScheduleModal(ref.code, 'rescheduled');
+            document.getElementById('markCanceledBtn').onclick = () => {
+              resetOutcomeState(ref.code);
+              outcomeToast.classList.add('hidden');
+              outcomeState.section = 'cancel';
+              renderOutcome();
+              showOutcome();
+            };
+          } else {
+            specialistActions.innerHTML = '';
+            specialistActions.classList.add('hidden');
+          }
+        } else {
+          specialistActions.innerHTML = '';
+          specialistActions.classList.add('hidden');
+        }
+        referringReadOnlyNote.classList.toggle('hidden', specialistContext);
+        detailMiddleWrap.classList.toggle('hidden', pendingSpecialist);
+      }
+
+      pendingConfirmBtn.addEventListener('click', () => {
+        const ref = findReferral(detailState.code);
+        if (!ref) return;
+        updateReferralStatus(ref, 'Accepted', 'Referral accepted', 'Just now', { markOutgoingUnread: true });
+        renderDetail();
+        render();
+      });
+
+      pendingCancelBtn.addEventListener('click', () => {
+        openCancelModal('decline');
+      });
+
+      function syncCancelSubmit() {
+        const ready = !!cancelReasonSelect.value;
+        cancelSubmitBtn.disabled = !ready;
+        cancelSubmitBtn.classList.toggle('enabled', ready);
+      }
+
+      function closeCancelModal() {
+        cancelModal.classList.add('hidden');
+        cancelMode = 'cancel';
+        cancelReasonSelect.value = '';
+        cancelOtherReasonInput.value = '';
+        cancelOtherReasonInput.classList.add('hidden');
+        syncCancelSubmit();
+      }
+
+      scheduleDateInput.addEventListener('input', syncScheduleSave);
+      scheduleCloseBtn.addEventListener('click', closeScheduleModal);
+      scheduleDismissBtn.addEventListener('click', closeScheduleModal);
+      scheduleModal.addEventListener('click', (e) => {
+        if (e.target === scheduleModal) closeScheduleModal();
+      });
+      scheduleSaveBtn.addEventListener('click', () => {
+        if (scheduleSaveBtn.disabled) return;
+        const ref = findReferral(scheduleState.code);
+        if (!ref) return;
+        const newDate = new Date(scheduleDateInput.value);
+        const formatted = newDate.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        ref.appointment = ref.appointment || {};
+        ref.appointment.datetime = formatted;
+        ref.appointment.location = ref.specialistClinic || ref.appointment.location || '—';
+        ref.appointment.attending = ref.appointment.attending || 'Assigned specialist';
+        updateReferralStatus(
+          ref,
+          scheduleState.mode === 'rescheduled' ? 'Rescheduled' : 'Scheduled',
+          scheduleState.mode === 'rescheduled' ? 'Appointment rescheduled by specialist' : 'Referral scheduled',
+          'Just now',
+          { markOutgoingUnread: true }
+        );
+        closeScheduleModal();
+        detailState.code = ref.code;
+        detailState.contextTab = 'Incoming';
+        renderDetail();
+        showDetail();
+        render();
+      });
+
+      cancelReasonSelect.addEventListener('change', () => {
+        const showOther = cancelReasonSelect.value === 'Other';
+        cancelOtherReasonInput.classList.toggle('hidden', !showOther);
+        if (!showOther) cancelOtherReasonInput.value = '';
+        syncCancelSubmit();
+      });
+      cancelOtherReasonInput.addEventListener('input', syncCancelSubmit);
+      cancelCloseBtn.addEventListener('click', closeCancelModal);
+      cancelDismissBtn.addEventListener('click', closeCancelModal);
+      cancelModal.addEventListener('click', (e) => {
+        if (e.target === cancelModal) closeCancelModal();
+      });
+
+      cancelSubmitBtn.addEventListener('click', () => {
+        if (cancelSubmitBtn.disabled) return;
+        const ref = findReferral(detailState.code);
+        if (!ref) return;
+        const cancelReason =
+          cancelReasonSelect.value === 'Other'
+            ? 'Other'
+            : cancelReasonSelect.value;
+        updateReferralStatus(
+          ref,
+          cancelMode === 'decline' ? 'Declined' : 'Canceled',
+          'Referral cancelled',
+          'Just now',
+          { markOutgoingUnread: true }
+        );
+        ref.timeline.push({
+          event: 'Cancellation reason selected: ' + cancelReason,
+          date: formatDateShort(new Date())
+        });
+        if (cancelReasonSelect.value === 'Other' && cancelOtherReasonInput.value.trim()) {
+          ref.timeline.push({
+            event: 'Cancellation note: ' + cancelOtherReasonInput.value.trim(),
+            date: formatDateShort(new Date())
+          });
+        }
+        closeCancelModal();
+        renderDetail();
+        render();
+      });
+
+      outcomeOpenCompletedBtn.addEventListener('click', () => {
+        outcomeToast.classList.add('hidden');
+        outcomeState.section = 'completed';
+        renderOutcomeExpanded();
+      });
+      outcomeOpenNoShowBtn.addEventListener('click', () => {
+        outcomeToast.classList.add('hidden');
+        outcomeState.section = 'noshow';
+        renderOutcomeExpanded();
+      });
+      outcomeOpenRescheduleBtn.addEventListener('click', () => {
+        outcomeToast.classList.add('hidden');
+        outcomeState.section = 'reschedule';
+        renderOutcomeExpanded();
+      });
+      outcomeOpenCancelBtn.addEventListener('click', () => {
+        outcomeToast.classList.add('hidden');
+        outcomeState.section = 'cancel';
+        renderOutcomeExpanded();
+      });
+
+      function render() {
+        const rows = getRows();
+        renderKpis(rows);
+        renderTable(rows);
+      }
+
+      syncSubspecialtyField();
+      syncButtons();
+      render();
+    </script>
+  </body>
+</html>
